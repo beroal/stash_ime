@@ -1,0 +1,75 @@
+<html>
+<head>
+<title></title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Language" content="en">
+</head>
+<body>
+
+<p>
+With this application, you can search for characters in the Unicode Character Database and add them to custom soft keyboards (input method editors).
+</p>
+<p>
+The application will install an input method called “Stash” on your device. You can access the settings of this input method from the OS settings. The settings screen of this input method consists of 2 parts:
+<ul>
+<li>Keyboard Editor,</li>
+<li>Unicode Explorer.</li>
+</ul>
+</p>
+<p>
+Characters can be copied from Unicode Explorer to Keyboard Editor. Both parts are shown in the landscape mode. Only 1 part is shown in the portrait mode, but they can be switched by tapping buttons “CH” and “KB.” There is also an internal clipboard which looks like a row of characters at the bottom of the screen. It is useful for copying a bunch of characters in the portrait mode.
+</p>
+<p>
+Keyboards created in Keyboard Editor will be added to the OS as distinct input method subtypes. In order to use a keyboard when editing text (in any application), enable it in the OS subtype enabler accessible from the menu.
+</p>
+
+<h1>Example usage</h1>
+<ul>
+<li>Enable the Stash input method in the OS settings. The procedure depends on OS version.</li>
+<li>Open Keyboard Editor.
+	<ul>
+	<li>Tap the “+” button. A form with a text edit field will appear.</li>
+	<li>Enter a keyboard name and tap the “+” button near the text field. A keyboard with this name and 1 empty key will be created.</li>
+	<li>Tap the “+C” (meaning “insert a column”) button. Tap the right side of the key. A new column with 1 key will be inserted into the keyboard.</li>
+	<li>Tap the “+R” (meaning “insert a row”) button. Tap the right side of a key. A new row with 2 keys will be inserted into the keyboard.</li>
+	</ul>
+</li>
+<li>Imagine that you want to add symbols called “smiling face with horns” and the mathematical symbol of infinity to the keyboard.
+	<ul>
+	<li>Switch to Unicode Explorer.
+		<ul>
+		<li>Enter “horn” into the search text field.</li>
+		<li>Tap the “+F” (meaning “insert a filter element”) button. The “CPV” screen will appear.
+			<ul>
+			<li>Tap the “magnifying glass” icon.</li>
+			<li>Enter “emo” into the search field.</li>
+			<li>Tap the line “Emoji: Yes.” You will return back to Unicode Explorer. Now the CPV filter in Unicode Explorer shows the corresponding filter item.</li>
+			</ul>
+		</li>
+		<li>Tap the Copy button in the row containing “smiling face with horns.” That character will appear in the internal keyboard and will be copied into the OS clipboard.</li>
+		<li>Tap the “x” button near the filter item. The item will disappear.</li>
+		<li>Enter “inf” into the search text field.</li>
+		<li>Tap the Copy button in the row containing “infinity.”</li>
+		</ul>
+	</li>
+	<li>Switch to Keyboard Editor.
+		<ul>
+		<li>Tap on an empty key. The infinity symbol will appear on the key. It was pasted from the OS keyboard.</li>
+		<li>Drag the “smiling face with horns” character from the internal clipboard onto a key. The character will appear on the key.</li>
+		<li>Tap on a character in the internal clipboard. That character will be copied into the OS clipboard.</li>
+		<li>Drag a character from a key and drop onto another key.</li>
+		</ul>
+	</li>
+	</ul>
+</li>
+<li>Tap a text field in any application. A soft keyboard will appear.
+	<ul>
+	<li>Tap the icon of the OS input method subtype picker.</li>
+	<li>Select your keyboard.</li>
+	<li>Enter your characters into the text field.</li>
+	</ul>
+</li>
+</ul>
+
+</body>
+</html>

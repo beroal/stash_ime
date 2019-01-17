@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Stash IME</string>
+    <string name="im_subtype_name_dyn">%s</string>
+</resources>

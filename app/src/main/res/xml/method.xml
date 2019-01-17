@@ -1,0 +1,15 @@
+<input-method xmlns:android="http://schemas.android.com/apk/res/android"
+    android:supportsSwitchingToNextInputMethod="true" >
+    <!--
+    <subtype android:label="@string/im_test_name_static_en"
+        android:icon="@drawable/icon_en_us"
+        android:imeSubtypeLocale="en_US"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="test_static_en" />
+    <subtype android:label="@string/im_test_name_static_uk"
+        android:icon="@drawable/icon_en_us"
+        android:imeSubtypeLocale="uk_UA"
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeExtraValue="test_static_uk" />
+        -->
+</input-method>

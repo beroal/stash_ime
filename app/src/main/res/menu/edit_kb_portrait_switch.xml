@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/portrait_switch_edit_kb"
+        android:title="KB"
+        app:showAsAction="always"/>
+    <item
+        android:id="@+id/portrait_switch_search_char"
+        android:title="CH"
+        app:showAsAction="always"/>
+
+</menu>
