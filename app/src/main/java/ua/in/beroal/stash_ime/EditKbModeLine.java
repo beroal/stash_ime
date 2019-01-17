@@ -1,26 +1,22 @@
 package ua.in.beroal.stash_ime;
 
-import java.util.Objects;
-
+/**
+ * A mode for working with keyboard rows and columns.
+ */
 public class EditKbModeLine extends EditKbMode implements Cloneable {
-    private int op;
-    private int coord;
+    private Op op;
+    private Coord coord;
 
-    public EditKbModeLine(int op, int coord) {
+    public EditKbModeLine(Op op, Coord coord) {
         this.op = op;
         this.coord = coord;
     }
 
-    @Override
-    public EditKbModeLine clone() {
-        return (EditKbModeLine) super.clone();
-    }
-
-    public int getOp() {
+    public Op getOp() {
         return op;
     }
 
-    public int getCoord() {
+    public Coord getCoord() {
         return coord;
     }
 
@@ -37,8 +33,7 @@ public class EditKbModeLine extends EditKbMode implements Cloneable {
                 coord == that.coord;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(op, coord);
-    }
+    public enum Op {DELETE, INSERT}
+
+    public enum Coord {ROW, COLUMN}
 }

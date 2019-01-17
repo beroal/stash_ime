@@ -1,10 +1,10 @@
 package ua.in.beroal.stash_ime;
 
-public class CharRow {
+public class CharForView {
     private int codePoint;
     private String name;
 
-    public CharRow(int codePoint, String name) {
+    public CharForView(int codePoint, String name) {
         this.codePoint = codePoint;
         this.name = name;
     }

@@ -29,198 +29,15 @@ import java.util.List;
 
 import io.reactivex.Observable;
 import io.reactivex.functions.Function;
+import ua.in.beroal.android.ClickPointGridLayout;
 import ua.in.beroal.android.ClickPointTextView;
+import ua.in.beroal.java.NoMatchingConstant;
 import ua.in.beroal.util.Unicode;
 
 public class EditKbFragment extends Fragment {
     private EditKbVm vm;
-    private View rootV;
-    private ViewGroup editKbV;
-    private Spinner chooseKbV;
-    private ArrayAdapter<CharSequence> chooseKbAdapter;
 
-    @Nullable @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup parent,
-                             @Nullable Bundle savedInstanceState) {
-        vm = ViewModelProviders.of(this).get(EditKbVm.class);
-        rootV = (ViewGroup) inflater.inflate(R.layout.fragment_edit_kb, parent, false);
-        ((Button) rootV.findViewById(R.id.insert_kb_form_flip))
-                .setOnClickListener(v -> vm.flipInsertKbForm());
-        vm.getIsInsertKbFormShown().observe(this,
-                a -> rootV.findViewById(R.id.insert_kb_form).setVisibility(
-                        a ? View.VISIBLE : View.GONE));
-        editKbV = rootV.findViewById(R.id.edit_kb);
-        vm.getKbLiveData().observe(this,
-                kbStateV -> {
-                    if (editKbV.getChildCount() != 0) {
-                        editKbV.removeViewAt(0);
-                    }
-                    if (!kbStateV.getKeys().isEmpty()) {
-                        final KbKeys kb = kbStateV.getKeys().orElseThrow();
-                        final KbGridView gridV = new KbGridView(getContext());
-                        final Pair<List<View>, List<View>> gridMeasure =
-                                new Pair<>(new ArrayList<>(), new ArrayList<>());
-                        gridV.setLayoutParams(new ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                        gridV.setUseDefaultMargins(true);
-                        gridV.setColumnCount(kb.getColumnCount());
-                        int i = 0;
-                        for (Iterable<Integer> keyRow : kb.getKeys()) {
-                            int j = 0;
-                            for (int char1 : keyRow) {
-                                final ClickPointTextView keyV = new ClickPointTextView(getContext());
-                                if (i == 0) {
-                                    gridMeasure.second.add(keyV);
-                                }
-                                if (j == 0) {
-                                    gridMeasure.first.add(keyV);
-                                }
-                                final GridLayout.LayoutParams layoutParams = new GridLayout.LayoutParams(
-                                        GridLayout.spec(i, GridLayout.FILL),
-                                        GridLayout.spec(j, GridLayout.FILL, 1F));
-                                keyV.setLayoutParams(layoutParams);
-                                keyV.setGravity(Gravity.CENTER);
-                                keyV.setTextSize(22);
-                                keyV.setBackgroundColor(0xFFFFEECC);
-                                keyV.setText(char1 == -1 ? "" : Unicode.codePointToString(char1));
-                                final Pair<Integer, Integer> pos = new Pair<>(i, j);
-                                keyV.setTag(R.id.key_pos, pos);
-                                final boolean keyIsEmpty = char1 == -1;
-                                if (kbStateV.getEditMode() instanceof EditKbModeKey) {
-                                    keyV.setOnClickPointListener((v, x, y) -> {
-                                        if (keyIsEmpty) {
-                                            vm.pasteKey(pos);
-                                        } else {
-                                            registerForContextMenu(keyV);
-                                            v.showContextMenu(x, y);
-                                        }
-                                    });
-                                    keyV.setOnDragFromListener(v -> {
-                                        v.startDragAndDrop(
-                                                ClipData.newPlainText("", Unicode.codePointToString(char1)),
-                                                new View.DragShadowBuilder(v),
-                                                null,
-                                                0);
-                                        vm.putKey(pos, -1);
-                                    });
-                                    keyV.setOnDragListener((v, event) -> {
-                                        switch (event.getAction()) {
-                                            case DragEvent.ACTION_DRAG_STARTED:
-                                                return event.getClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN);
-                                            case DragEvent.ACTION_DROP:
-                                                final ClipData clipData = event.getClipData();
-                                                if (clipData.getItemCount() != 0) {
-                                                    final CharSequence b = clipData.getItemAt(0).getText();
-                                                    int char2 = b == null || b.length() == 0 ? -1 : UCharacter.codePointAt(b, 0);
-                                                    vm.putKey(pos, char2);
-                                                }
-                                                return true;
-                                            default:
-                                                return true;
-                                        }
-                                    });
-                                } else {
-                                    keyV.setClickable(false);
-                                }
-                                gridV.addView(keyV);
-                                j++;
-                            }
-                            i++;
-                        }
-                        if (kbStateV.getEditMode() instanceof EditKbModeLine) {
-                            EditKbModeLine editModeLine = (EditKbModeLine) kbStateV.getEditMode();
-                            gridV.setOnClickPointListener((v, x, y) -> {
-                                final Iterable<View> boundViews;
-                                final Function<View, Integer> viewToBound;
-                                final float pointer;
-                                switch (editModeLine.getCoord()) {
-                                    case 0:
-                                        boundViews = gridMeasure.first;
-                                        viewToBound = View::getBottom;
-                                        pointer = y;
-                                        break;
-                                    case 1:
-                                        boundViews = gridMeasure.second;
-                                        viewToBound = View::getRight;
-                                        pointer = x;
-                                        break;
-                                    default:
-                                        throw new RuntimeException();
-                                }
-                                final Iterable<Integer> bounds = Observable.fromIterable(boundViews)
-                                        .map(viewToBound)
-                                        .blockingIterable();
-                                final int pointerI = Math.round(pointer);
-                                final int i1;
-                                switch (editModeLine.getOp()) {
-                                    case 0:
-                                        i1 = getHitDelete(bounds, pointerI);
-                                        break;
-                                    case 1:
-                                        i1 = getHitInsert(bounds, pointerI);
-                                        break;
-                                    default:
-                                        throw new RuntimeException();
-                                }
-                                vm.editModeDoOp(i1);
-                            });
-                        }
-                        editKbV.addView(gridV);
-                    }
-                });
-        chooseKbV = (Spinner) rootV.findViewById(R.id.choose_kb);
-        chooseKbV.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                vm.setChosenKb(position == AdapterView.INVALID_POSITION ? -1 : position);
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
-        chooseKbAdapter = new ArrayAdapter<>(getContext(),
-                android.R.layout.simple_spinner_item);
-        chooseKbAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        chooseKbV.setAdapter(chooseKbAdapter);
-        vm.getKbListLiveData().observe(this,
-                a -> {
-                    chooseKbAdapter.clear();
-                    for (CharSequence item : a.second) {
-                        chooseKbAdapter.add(item);
-                    }
-                    chooseKbAdapter.notifyDataSetChanged();
-                    if (a.first != -1) {
-                        chooseKbV.setSelection(a.first);
-                    } else {
-                        chooseKbV.setSelection(AdapterView.INVALID_POSITION);
-                    }
-
-                });
-        ((Button) rootV.findViewById(R.id.insert_kb_do)).setOnClickListener(
-                v -> {
-                    vm.hideInsertKbForm();
-                    vm.insertKb(((TextView) rootV.findViewById(R.id.insert_kb_name)).getText().toString());
-                }
-        );
-        final Button deleteKbV = (Button) rootV.findViewById(R.id.delete_kb);
-        deleteKbV.setOnClickListener(v -> vm.deleteKb());
-        initEditModeButton(R.id.insert_row, new EditKbModeLine(1, 0));
-        initEditModeButton(R.id.insert_column, new EditKbModeLine(1, 1));
-        initEditModeButton(R.id.delete_row, new EditKbModeLine(0, 0));
-        initEditModeButton(R.id.delete_column, new EditKbModeLine(0, 1));
-        vm.restoreInstanceState(savedInstanceState);
-        return rootV;
-    }
-
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState(outState);
-        vm.onSaveInstanceState(outState);
-    }
-
-    private int getHitDelete(Iterable<Integer> bounds, int pointer) {
+    private static int getHitDelete(Iterable<Integer> bounds, int pointer) {
         int i = 0;
         for (int bound : bounds) {
             if (pointer < bound) {
@@ -231,7 +48,7 @@ public class EditKbFragment extends Fragment {
         return i;
     }
 
-    private int getHitInsert(Iterable<Integer> bounds, int pointer) {
+    private static int getHitInsert(Iterable<Integer> bounds, int pointer) {
         int i = 0;
         int prevBound = 0;
         for (int bound : bounds) {
@@ -244,43 +61,140 @@ public class EditKbFragment extends Fragment {
         return i;
     }
 
-    private void initEditModeButton(int buttonId, EditKbModeLine editMode) {
-        final Button buttonV = (Button) rootV.findViewById(buttonId);
-        final String opS;
-        switch (editMode.getOp()) {
-            case 0:
-                opS = "−";
-                break;
-            case 1:
-                opS = "+";
-                break;
+    private static int pointerToLineIx(
+            float pointer, Iterable<Integer> bounds, EditKbModeLine.Op op) {
+        final int pointerInteger = Math.round(pointer);
+        switch (op) {
+            case DELETE:
+                return getHitDelete(bounds, pointerInteger);
+            case INSERT:
+                return getHitInsert(bounds, pointerInteger);
             default:
-                throw new IllegalArgumentException();
+                throw new NoMatchingConstant();
         }
-        final String coordS;
+
+    }
+
+    @NonNull
+    private static String getOpButtonText(@NonNull EditKbModeLine editMode) {
+        switch (editMode.getOp()) {
+            case DELETE:
+                return "−";
+            case INSERT:
+                return "+";
+            default:
+                throw new NoMatchingConstant();
+        }
+    }
+
+    @NonNull
+    private static String getCoordButtonText(@NonNull EditKbModeLine editMode) {
         switch (editMode.getCoord()) {
-            case 0:
-                coordS = "R";
-                break;
-            case 1:
-                coordS = "C";
-                break;
-                default:
-                    throw new IllegalArgumentException();
+            case ROW:
+                return "R";
+            case COLUMN:
+                return "C";
+            default:
+                throw new NoMatchingConstant();
         }
-        buttonV.setText(opS + coordS);
-        vm.getEditModeLiveData(editMode).observe(this,
+    }
+
+    /**
+     * Initializes a button with {@code buttonId} resource id
+     * and {@code editMode} function (purpose).
+     * {@link #vm} must be initialized.
+     */
+    private void initEditModeButton(@NonNull View rootView,
+                                    int buttonId, @NonNull EditKbModeLine editMode) {
+        final Button buttonView = (Button) rootView.findViewById(buttonId);
+        buttonView.setText(getOpButtonText(editMode) + getCoordButtonText(editMode));
+        vm.getEditMode(editMode).observe(this,
                 isOn -> {
-                    buttonV.setTextColor(isOn ? 0xFFFFFFFF : 0xFF555555);
-                    buttonV.setBackgroundColor(isOn ? 0xFF555555 : 0xFFDDDDDD);
+                    buttonView.setTextColor(isOn ? 0xFFFFFFFF : 0xFF555555);
+                    buttonView.setBackgroundColor(isOn ? 0xFF555555 : 0xFFDDDDDD);
                 });
-        buttonV.setOnClickListener(v -> vm.flipEditModeLine(editMode));
+        buttonView.setOnClickListener(view -> vm.flipEditModeLine(editMode));
+    }
+
+    /**
+     * Sets the adapter of {@code chooseKbView}. {@link #vm} must be initialized.
+     */
+    private void setChooseKbAdapter(@NonNull Spinner chooseKbView) {
+        ArrayAdapter<CharSequence> chooseKbAdapter =
+                new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item);
+        chooseKbAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        chooseKbView.setAdapter(chooseKbAdapter);
+        vm.getKbList().observe(this,
+                a -> {
+                    chooseKbAdapter.clear();
+                    for (CharSequence item : a.second) {
+                        chooseKbAdapter.add(item);
+                    }
+                    chooseKbAdapter.notifyDataSetChanged();
+                    chooseKbView.setSelection(a.first != -1
+                            ? a.first : AdapterView.INVALID_POSITION);
+
+                });
+    }
+
+    @Override @Nullable
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup parent,
+                             @Nullable Bundle savedInstanceState) {
+        vm = ViewModelProviders.of(this).get(EditKbVm.class);
+        final View rootView = (ViewGroup) inflater.inflate(
+                R.layout.fragment_edit_kb, parent, false);
+        ((Button) rootView.findViewById(R.id.insert_kb_form_flip))
+                .setOnClickListener(v -> vm.flipInsertKbForm());
+        vm.getIsInsertKbFormShown().observe(this,
+                a -> rootView.findViewById(R.id.insert_kb_form).setVisibility(
+                        a ? View.VISIBLE : View.GONE));
+        final ViewGroup editKbView = rootView.findViewById(R.id.edit_kb);
+        vm.getKb().observe(this, kbViewState -> createKbView(editKbView, kbViewState));
+        {
+            Spinner chooseKbView = (Spinner) rootView.findViewById(R.id.choose_kb);
+            chooseKbView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    vm.setChosenKb(position == AdapterView.INVALID_POSITION ? -1 : position);
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+
+                }
+            });
+            setChooseKbAdapter(chooseKbView);
+        }
+        final TextView insertKbNameView = (TextView) rootView.findViewById(R.id.insert_kb_name);
+        ((Button) rootView.findViewById(R.id.insert_kb_do)).setOnClickListener(
+                v -> {
+                    vm.hideInsertKbForm();
+                    vm.insertKb(insertKbNameView.getText().toString());
+                }
+        );
+        ((Button) rootView.findViewById(R.id.delete_kb)).setOnClickListener(view -> vm.deleteKb());
+        initEditModeButton(rootView, R.id.insert_row, new EditKbModeLine(
+                EditKbModeLine.Op.INSERT, EditKbModeLine.Coord.ROW));
+        initEditModeButton(rootView, R.id.insert_column, new EditKbModeLine(
+                EditKbModeLine.Op.INSERT, EditKbModeLine.Coord.COLUMN));
+        initEditModeButton(rootView, R.id.delete_row, new EditKbModeLine(
+                EditKbModeLine.Op.DELETE, EditKbModeLine.Coord.ROW));
+        initEditModeButton(rootView, R.id.delete_column, new EditKbModeLine(
+                EditKbModeLine.Op.DELETE, EditKbModeLine.Coord.COLUMN));
+        vm.restoreInstanceState(savedInstanceState);
+        return rootView;
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        vm.saveInstanceState(outState);
     }
 
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v,
                                     ContextMenu.ContextMenuInfo menuInfo) {
-        ((Activity) getContext()).getMenuInflater().inflate(R.menu.kb_key_context, menu);
+        ((Activity) getContext()).getMenuInflater().inflate(R.menu.edit_kb_key_context, menu);
         final Pair<Integer, Integer> pos = (Pair<Integer, Integer>) v.getTag(R.id.key_pos);
         menu.findItem(R.id.kb_key_clear).setOnMenuItemClickListener(
                 item -> {
@@ -292,5 +206,126 @@ public class EditKbFragment extends Fragment {
                     vm.copyKey(pos);
                     return true;
                 });
+    }
+
+    private boolean keyViewOnDrag(Pair<Integer, Integer> pos, DragEvent event) {
+        switch (event.getAction()) {
+            case DragEvent.ACTION_DRAG_STARTED:
+                return event.getClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN);
+            case DragEvent.ACTION_DROP:
+                final ClipData clipData = event.getClipData();
+                if (clipData.getItemCount() != 0) {
+                    final CharSequence a = clipData.getItemAt(0).getText();
+                    vm.putKeyIfFilled(pos,
+                            a == null || a.length() == 0
+                                    ? Unicode.NO_CHAR : UCharacter.codePointAt(a, 0));
+                }
+                return true;
+            default:
+                return true;
+        }
+    }
+
+    @NonNull
+    private ClickPointTextView createKeyView(
+            boolean isEditKbModeKey, int rowI, int columnI, int char1) {
+        final ClickPointTextView keyView = new ClickPointTextView(getContext());
+        final GridLayout.LayoutParams layoutParams = new GridLayout.LayoutParams(
+                GridLayout.spec(rowI, GridLayout.FILL),
+                GridLayout.spec(columnI, GridLayout.FILL, 1F));
+        keyView.setLayoutParams(layoutParams);
+        keyView.setGravity(Gravity.CENTER);
+        keyView.setTextSize(22);
+        keyView.setBackgroundColor(0xFFFFEECC);
+        keyView.setText(char1 == Unicode.NO_CHAR
+                ? "" : Unicode.codePointToString(char1));
+        final Pair<Integer, Integer> pos = new Pair<>(rowI, columnI);
+        keyView.setTag(R.id.key_pos, pos);
+        final boolean keyIsEmpty = char1 == Unicode.NO_CHAR;
+        if (isEditKbModeKey) {
+            keyView.setOnClickPointListener((view, x, y) -> {
+                if (keyIsEmpty) {
+                    vm.pasteKey(pos);
+                } else {
+                    registerForContextMenu(keyView);
+                    view.showContextMenu(x, y);
+                }
+            });
+            keyView.setOnDragStartedListener((view, x, y) -> {
+                view.startDragAndDrop(
+                        ClipData.newPlainText("", Unicode.codePointToString(char1)),
+                        new View.DragShadowBuilder(view),
+                        null,
+                        0);
+                vm.clearKey(pos);
+            });
+            keyView.setOnDragListener((view, event) -> keyViewOnDrag(pos, event));
+        } else {
+            keyView.setClickable(false);
+        }
+        return keyView;
+    }
+
+    private void createKbView(ViewGroup editKbView, KbViewState kbViewState) {
+        if (editKbView.getChildCount() != 0) {
+            editKbView.removeViewAt(0);
+        }
+        if (!kbViewState.getKeys().isEmpty()) {
+            final ClickPointGridLayout gridView = new ClickPointGridLayout(getContext());
+            final Pair<List<View>, List<View>> gridMeasure =
+                    new Pair<>(new ArrayList<>(), new ArrayList<>());
+            gridView.setLayoutParams(new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            gridView.setUseDefaultMargins(true);
+            final KbKeys kb = kbViewState.getKeys().orElseThrow();
+            gridView.setColumnCount(kb.getColumnCount());
+            {
+                int rowI = 0;
+                for (Iterable<Integer> keyRow : kb.getKeys()) {
+                    int columnI = 0;
+                    for (int char1 : keyRow) {
+                        final ClickPointTextView keyView = createKeyView(
+                                kbViewState.getEditMode() instanceof EditKbModeKey,
+                                rowI, columnI, char1);
+                        gridView.addView(keyView);
+                        if (rowI == 0) {
+                            gridMeasure.second.add(keyView);
+                        }
+                        if (columnI == 0) {
+                            gridMeasure.first.add(keyView);
+                        }
+                        columnI++;
+                    }
+                    rowI++;
+                }
+            }
+            if (kbViewState.getEditMode() instanceof EditKbModeLine) {
+                EditKbModeLine editModeLine = (EditKbModeLine) kbViewState.getEditMode();
+                gridView.setOnClickPointListener((view, x, y) -> {
+                    final Iterable<View> boundViews;
+                    final Function<View, Integer> viewToBound;
+                    final float pointer;
+                    switch (editModeLine.getCoord()) {
+                        case ROW:
+                            boundViews = gridMeasure.first;
+                            viewToBound = View::getBottom;
+                            pointer = y;
+                            break;
+                        case COLUMN:
+                            boundViews = gridMeasure.second;
+                            viewToBound = View::getRight;
+                            pointer = x;
+                            break;
+                        default:
+                            throw new NoMatchingConstant();
+                    }
+                    final Iterable<Integer> bounds = Observable.fromIterable(boundViews)
+                            .map(viewToBound)
+                            .blockingIterable();
+                    vm.editModeDoOp(pointerToLineIx(pointer, bounds, editModeLine.getOp()));
+                });
+            }
+            editKbView.addView(gridView);
+        }
     }
 }

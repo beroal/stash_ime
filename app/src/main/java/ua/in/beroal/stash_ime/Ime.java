@@ -20,44 +20,40 @@ import java8.util.Optional;
 
 public class Ime extends InputMethodService
         implements KeyboardView.OnKeyboardActionListener, LifecycleOwner {
-    public static final String SUBTYPE_STRING_ID_EXTRA_KEY = "string_id";
-    public static final String THIS_INPUT_METHOD_ID;
-
-    static {
-        Class<Ime> aClass = Ime.class;
-        THIS_INPUT_METHOD_ID = BuildConfig.APPLICATION_ID + "/." + aClass.getSimpleName();
-    }
-
+    public static final String SUBTYPE_STRING_ID_EXTRA_FIELD = "string_id";
     private LifecycleRegistry lifecycle;
-    private MutableLiveData<Optional<KbKeys>> emptyKbLiveData;
-    private MutableLiveData<Optional<String>> kbIdLiveData = new MutableLiveData<>();
-    private LiveData<Optional<KbKeys>> kbKeysLiveData;
+    private MutableLiveData<Optional<KbKeys>> emptyKb = new MutableLiveData<>();
+    private MutableLiveData<Optional<String>> kbId = new MutableLiveData<>();
+    private LiveData<Optional<KbKeys>> kbKeys;
 
     public Ime() {
         lifecycle = new LifecycleRegistry(this);
-        emptyKbLiveData = new MutableLiveData<>();
-        emptyKbLiveData.setValue(Optional.empty());
-        kbKeysLiveData = Transformations.switchMap(kbIdLiveData,
-                kbId -> kbId.isEmpty() ? emptyKbLiveData
-                        : ((App) getApplication()).getEditKbRepo().getKeysOptionalLiveData(kbId.orElseThrow()));
+        emptyKb.setValue(Optional.empty());
+        kbKeys = Transformations.switchMap(kbId,
+                kbId -> kbId.isEmpty()
+                        ? emptyKb
+                        : ((App) getApplication()).getEditKbRepo()
+                        .getKeysOptional(kbId.orElseThrow()));
     }
 
-    public static InputMethodSubtype[] inputMethodSubtypes(List<String> kbList) {
+    @NonNull
+    public static InputMethodSubtype[] inputMethodSubtypes(@NonNull List<String> kbList) {
         final InputMethodSubtype[] subtypes = new InputMethodSubtype[kbList.size()];
         final InputMethodSubtype.InputMethodSubtypeBuilder subtypeBuilder =
                 new InputMethodSubtype.InputMethodSubtypeBuilder()
-
                         .setSubtypeNameResId(R.string.im_subtype_name_dyn)
                         .setSubtypeMode("keyboard");
         int i = 0;
         final Locale[] locales = Locale.getAvailableLocales();
         for (String kbId : kbList) {
-
             subtypes[i] = subtypeBuilder
                     .setSubtypeId(kbId.hashCode())
                     .setSubtypeLocale(locales[i].toString())
+                    /* We use an undocumented feature of the OS input method framework.
+                     * The value of the "Untranslatable..." field
+                     * replaces "%s" in the input method subtype's name. */
                     .setSubtypeExtraValue("UntranslatableReplacementStringInSubtypeName=" + kbId
-                            + "," + SUBTYPE_STRING_ID_EXTRA_KEY + "=" + kbId)
+                            + "," + SUBTYPE_STRING_ID_EXTRA_FIELD + "=" + kbId)
                     .build();
             i++;
         }
@@ -66,28 +62,35 @@ public class Ime extends InputMethodService
 
     @Override
     public View onCreateInputView() {
-        final KbView kbV = new KbView(this, null, 0, 0);
-        kbV.setOnKeyboardActionListener(this);
-        final InputMethodSubtype imSubtype = App.getInputMethodManager().get(this).getCurrentInputMethodSubtype();
+        final KbView kbView = new KbView(this, null, 0);
+        kbView.setOnKeyboardActionListener(this);
+        final InputMethodSubtype imSubtype = App.getInputMethodManager().get(this)
+                .getCurrentInputMethodSubtype();
         String kbId;
         if (imSubtype == null) {
             kbId = null;
         } else {
 
-            final String subtypeKbId = imSubtype.getExtraValueOf(SUBTYPE_STRING_ID_EXTRA_KEY);
+            final String subtypeKbId = imSubtype.getExtraValueOf(SUBTYPE_STRING_ID_EXTRA_FIELD);
             kbId = ((App) getApplication()).getEditKbRepo().kbExists(subtypeKbId) ?
                     subtypeKbId : null;
         }
-        kbIdLiveData.setValue(Optional.ofNullable(kbId));
-        kbKeysLiveData.observe(this, kbV::setContents);
+        this.kbId.setValue(Optional.ofNullable(kbId));
+        kbKeys.observe(this, kbView::setContents);
         /*TODO if chosen kb is deleted*/
-        return kbV;
+        return kbView;
     }
 
     @Override
     public void onWindowShown() {
         lifecycle.markState(Lifecycle.State.RESUMED);
         super.onWindowShown();
+    }
+
+    @Override
+    public void onWindowHidden() {
+        super.onWindowHidden();
+        lifecycle.markState(Lifecycle.State.CREATED);
     }
 
     @Override
@@ -136,18 +139,12 @@ public class Ime extends InputMethodService
     @Override
     protected void onCurrentInputMethodSubtypeChanged(InputMethodSubtype newSubtype) {
         super.onCurrentInputMethodSubtypeChanged(newSubtype);
-        kbIdLiveData.setValue(Optional.of(newSubtype.getExtraValueOf(SUBTYPE_STRING_ID_EXTRA_KEY)));
+        kbId.setValue(Optional.of(newSubtype.getExtraValueOf(SUBTYPE_STRING_ID_EXTRA_FIELD)));
         Log.d("App", "SubtypeChanged=" + newSubtype);
     }
 
     @Override
-    public void onWindowHidden() {
-        super.onWindowHidden();
-        lifecycle.markState(Lifecycle.State.CREATED);
-    }
-
     @NonNull
-    @Override
     public Lifecycle getLifecycle() {
         return lifecycle;
     }

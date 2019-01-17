@@ -1,12 +1,10 @@
-package ua.in.beroal.stash_ime;
+package ua.in.beroal.android;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.widget.GridLayout;
-
-import ua.in.beroal.android.ClickPoint;
 
 public class ClickPointGridLayout extends GridLayout {
     private ClickPoint clickPoint;

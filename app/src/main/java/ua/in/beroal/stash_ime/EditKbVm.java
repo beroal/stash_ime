@@ -5,14 +5,20 @@ import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MutableLiveData;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 import android.util.Log;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import java8.util.Objects;
 import java8.util.Optional;
+import ua.in.beroal.java.NoMatchingConstant;
+import ua.in.beroal.util.Unicode;
 
 import static android.arch.lifecycle.Transformations.map;
 import static android.arch.lifecycle.Transformations.switchMap;
@@ -21,180 +27,145 @@ import static ua.in.beroal.util.Android.clipboardToChar;
 import static ua.in.beroal.util.Android.map2;
 
 class EditKbVm extends AndroidViewModel {
+    private boolean initialized = false;
     private static final String CHOSEN_KB_ID_FIELD = "chosen_kb_id";
-    /*private static final String CHOSEN_KB_IX_FIELD = "chosen_kb_ix";*/
     private static final String EDIT_MODE_FIELD = "edit_mode";
+    private static final String EDIT_MODE_LINE_OP_FIELD = "edit_mode_line_op";
+    private static final String EDIT_MODE_LINE_COORD_FIELD = "edit_mode_line_coord";
     private static final String IS_INSERT_KB_FORM_SHOWN_FIELD = "is_insert_kb_form_shown";
-    private final MutableLiveData<EditKbMode> editModeLiveData = new MutableLiveData<>();
-    private String chosenKbId;
+    private final MutableLiveData<EditKbMode> editMode = new MutableLiveData<>();
+    private String chosenKbIdI;
     private String insertChosenKbId;
-    /*private int chosenKbIx;*/
-    private MutableLiveData<String> kbIdLiveData = new MutableLiveData<>();
-    private EditKbMode editMode;
-    private MutableLiveData<Boolean> editModeInsertRowLiveData = new MutableLiveData<>();
-    private MutableLiveData<Boolean> editModeDeleteRowLiveData = new MutableLiveData<>();
-    private MutableLiveData<Boolean> editModeInsertColumnLiveData = new MutableLiveData<>();
-    private MutableLiveData<Boolean> editModeDeleteColumnLiveData = new MutableLiveData<>();
-    private LiveData<Pair<Integer, Iterable<? extends CharSequence>>> kbListSelLiveData;
+    private MutableLiveData<String> chosenKbId = new MutableLiveData<>();
+    private EditKbMode editModeI;
+    private MutableLiveData<Boolean> editModeInsertRow = new MutableLiveData<>();
+    private MutableLiveData<Boolean> editModeDeleteRow = new MutableLiveData<>();
+    private MutableLiveData<Boolean> editModeInsertColumn = new MutableLiveData<>();
+    private MutableLiveData<Boolean> editModeDeleteColumn = new MutableLiveData<>();
+    private LiveData<Pair<Integer, Iterable<? extends CharSequence>>> kbListSel;
     private MutableLiveData<Boolean> isInsertKbFormShown = new MutableLiveData<>();
-    private MutableLiveData<Optional<KbKeys>> emptyKbLiveData = new MutableLiveData<>();
-    private LiveData<KbViewState> kbLiveData;
+    private MutableLiveData<Optional<KbKeys>> emptyKb = new MutableLiveData<>();
+    private LiveData<KbViewState> kb;
 
     public EditKbVm(Application app) {
         super(app);
-        emptyKbLiveData.setValue(Optional.empty());
-        kbListSelLiveData = map(getRepo().getKbListLiveData(),
+        emptyKb.setValue(Optional.empty());
+        kbListSel = map(getRepo().getKbList(),
                 kbList -> {
-                    String oldKbId = chosenKbId;
+                    String oldKbId = chosenKbIdI;
                     if (insertChosenKbId != null) {
-                        chosenKbId = insertChosenKbId;
+                        chosenKbIdI = insertChosenKbId;
                         insertChosenKbId = null;
                     }
-                    final int i2;
-                    if (chosenKbId == null) {
-                        i2 = kbList.size() == 0 ? -1 : 0;
-                    } else {
-                        final int i = Collections.binarySearch(kbList, chosenKbId);
-                        if (i >= 0) {
-                            i2 = i;
-                        } else {
-                            final int i1 = -(i + 1);
-                            i2 = i1 == kbList.size() ?
-                                    kbList.size() == 0 ? -1 : kbList.size() - 1
-                                    : i1;
-                        }
-                        chosenKbId = i2 == -1 ? null : kbList.get(i2);
-                        if (!Objects.equals(chosenKbId, oldKbId)) {
-                            liveDataSetChosenKb();
-                        }
+                    final int chosenKbIx = adaptChosenKbId(kbList);
+                    if (!Objects.equals(chosenKbIdI, oldKbId)) {
+                        chosenKbSetLd();
                     }
-                    return new Pair<>(i2, kbList);
+                    return new Pair<>(chosenKbIx, kbList);
                 });
-        LiveData<Optional<KbKeys>> kbKeysLiveData = switchMap(kbIdLiveData,
-                kbId -> kbId == null ? emptyKbLiveData
-                        : map(getRepo().getKeysLiveData(kbId), Optional::of));
-        kbLiveData = map2(editModeLiveData, kbKeysLiveData, KbViewState::new);
+        LiveData<Optional<KbKeys>> kbKeysLiveData = switchMap(chosenKbId,
+                kbId -> kbId == null ? emptyKb
+                        : map(getRepo().getKeys(kbId), Optional::of));
+        kb = map2(editMode, kbKeysLiveData, KbViewState::new);
     }
 
-    public void onSaveInstanceState(Bundle outState) {
-        outState.putString(CHOSEN_KB_ID_FIELD, chosenKbId);
-        /*outState.putInt(CHOSEN_KB_IX_FIELD, chosenKbIx);*/
-        /*TODO edit mode*/
-        outState.putBoolean(IS_INSERT_KB_FORM_SHOWN_FIELD, isInsertKbFormShown.getValue());
-    }
-
-    public void restoreInstanceState(Bundle inState) {
-        final boolean isInsertKbFormShownValue;
-        if (inState == null) {
-            chosenKbId = null;
-            /*chosenKbIx = -1;*/
-            /*TODO edit mode*/
-            editMode = new EditKbModeKey();
-            isInsertKbFormShownValue = false;
-
+    /**
+     * Changes {@link #chosenKbIdI} such that it is correct with respect to {@code kbList}.
+     *
+     * @return the index of {@link #chosenKbIdI}
+     */
+    private int adaptChosenKbId(@NonNull List<String> kbList) {
+        final int i2;
+        if (chosenKbIdI == null) {
+            i2 = kbList.size() == 0 ? -1 : 0;
         } else {
-            chosenKbId = inState.getString(CHOSEN_KB_ID_FIELD);
-            /*chosenKbIx = inState.getInt(CHOSEN_KB_IX_FIELD);*/
-            /*TODO edit mode*/
-            editMode = new EditKbModeKey();
-            isInsertKbFormShownValue = inState.getBoolean(IS_INSERT_KB_FORM_SHOWN_FIELD);
-
+            final int i = Collections.binarySearch(kbList, chosenKbIdI);
+            if (i >= 0) {
+                i2 = i;
+            } else {
+                final int i1 = -(i + 1);
+                i2 = i1 == kbList.size()
+                        ? kbList.size() == 0 ? -1 : kbList.size() - 1
+                        : i1;
+            }
         }
-        liveDataSetChosenKb();
-        isInsertKbFormShown.setValue(isInsertKbFormShownValue);
-        editModeLiveDataSetValueAll();
-
+        chosenKbIdI = i2 == -1 ? null : kbList.get(i2);
+        return i2;
     }
 
-    private void liveDataSetChosenKb() {
-        kbIdLiveData.setValue(chosenKbId);
-    }
-
+    @NonNull
     private EditKbRepo getRepo() {
         return ((App) getApplication()).getEditKbRepo();
     }
 
-    public LiveData<KbViewState> getKbLiveData() {
-        return kbLiveData;
-    }
-
-    public LiveData<Boolean> getIsInsertKbFormShown() {
-        return isInsertKbFormShown;
-    }
-
-    public LiveData<Pair<Integer, Iterable<? extends CharSequence>>> getKbListLiveData() {
-        return kbListSelLiveData;
-    }
-
-    public void clearKey(Pair<Integer, Integer> pos) {
-        try {
-            getRepo().putKey(chosenKbId, pos, -1);
-        } catch (IOException e) {
-            Log.e("App", "I/O error", e);
-        }
-    }
-
-    public void copyKey(Pair<Integer, Integer> pos) {
-        final int char1 = getRepo().getKey(chosenKbId, pos);
-        if (char1 != -1) {
-            ((App) getApplication()).getCharClipboardRepo().get().insertFirstItem(char1);
-            charToClipboard(getApplication().getApplicationContext(), char1);
-        }
-    }
-
-    public void pasteKey(Pair<Integer, Integer> pos) {
-        final int char1 = clipboardToChar(getApplication().getApplicationContext());
-        if (char1 != -1) {
-            try {
-                getRepo().putKey(chosenKbId, pos, char1);
-            } catch (IOException e) {
-                Log.e("App", "I/O error", e);
+    private void writeEditModeToBundle(@NonNull Bundle outState) {
+        final int editModeTag;
+        if (editModeI instanceof EditKbModeKey) {
+            editModeTag = 0;
+        } else {
+            if (editModeI instanceof EditKbModeLine) {
+                editModeTag = 1;
+            } else {
+                throw new NoMatchingConstant();
             }
         }
-    }
-    /*public void keyToClipboard(String kbId, Pair<Integer, Integer> pos) {
-        final Integer char1 = getKey(kbId, pos);
-        if (char1 != -1) {
-            charToClipboard(context, char1);
+        outState.putInt(EDIT_MODE_FIELD, editModeTag);
+        if (editModeI instanceof EditKbModeLine) {
+            outState.putInt(EDIT_MODE_LINE_OP_FIELD,
+                    ((EditKbModeLine) editModeI).getOp().ordinal());
         }
     }
 
-    public void clipboardToKey(String kbId, Pair<Integer, Integer> pos) throws IOException {
-        final int char1 = clipboardToChar(context);
-        if (char1 != -1) {
-            kbFamily.get(kbId).putKey(pos, char1);
-        }
+    public void saveInstanceState(@NonNull Bundle outState) {
+        outState.putString(CHOSEN_KB_ID_FIELD, chosenKbIdI);
+        writeEditModeToBundle(outState);
+        outState.putBoolean(IS_INSERT_KB_FORM_SHOWN_FIELD, isInsertKbFormShown.getValue());
     }
 
-
-
-    public void clipboardToKey(Pair<Integer, Integer> pos) {
-        try {
-            getRepo().clipboardToKey(chosenKbId, pos);
-        } catch (IOException e) {
-            Log.e("App", "I/O error", e);
-        }
-    }*/
-
-    public void setChosenKb(int ix) {
-        chosenKbId = ix == -1 ? null : getRepo().kbIxToId(ix);
-        liveDataSetChosenKb();
-    }
-
-    private int findIx(Iterable<String> kbList) {
-        int r = -1;
-        int i = 0;
-        for (String kbId : kbList) {
-            if (chosenKbId.equals(kbId)) {
-                r = i;
+    private void readEditModeFromBundle(@NonNull Bundle inState) {
+        switch (inState.getInt(EDIT_MODE_FIELD)) {
+            case 0:
+                editModeI = new EditKbModeKey();
                 break;
-            }
-            i++;
+            case 1:
+                editModeI = new EditKbModeLine(
+                        EditKbModeLine.Op.values()[inState.getInt(EDIT_MODE_LINE_OP_FIELD)],
+                        EditKbModeLine.Coord.values()[inState.getInt(EDIT_MODE_LINE_COORD_FIELD)]);
+                break;
+            default:
+                throw new NoMatchingConstant();
         }
-        return r;
     }
 
-    public void insertKb(String kbId) {
+    /**
+     * This method must be called before calling other methods except {@link LiveData} getters.
+     */
+    public void restoreInstanceState(@Nullable Bundle inState) {
+        if (!initialized) {
+            final boolean isInsertKbFormShownValue;
+            if (inState == null) {
+                chosenKbIdI = null;
+                editModeI = new EditKbModeKey();
+                isInsertKbFormShownValue = false;
+            } else {
+                chosenKbIdI = inState.getString(CHOSEN_KB_ID_FIELD);
+                readEditModeFromBundle(inState);
+                isInsertKbFormShownValue = inState.getBoolean(IS_INSERT_KB_FORM_SHOWN_FIELD);
+
+            }
+            chosenKbSetLd();
+            isInsertKbFormShown.setValue(isInsertKbFormShownValue);
+            editModeSetLdAll();
+            initialized = true;
+        }
+    }
+
+    @NonNull
+    public LiveData<Pair<Integer, Iterable<? extends CharSequence>>> getKbList() {
+        return kbListSel;
+    }
+
+    public void insertKb(@NonNull String kbId) {
         insertChosenKbId = kbId;
         try {
             final boolean success;
@@ -204,7 +175,7 @@ class EditKbVm extends AndroidViewModel {
                 insertChosenKbId = null;
             }
             if (!success) {
-                Log.e("Search", "A keyboard with this name exists.");
+                Log.e("App", "A keyboard with this name exists.");
             }
         } catch (IOException e) {
             Log.e("App", "I/O error", e);
@@ -212,80 +183,13 @@ class EditKbVm extends AndroidViewModel {
 
     }
 
-
     public void deleteKb() {
-        getRepo().deleteKb(chosenKbId);
+        getRepo().deleteKb(chosenKbIdI);
     }
 
-    private int repoGetKey(Pair<Integer, Integer> pos) {
-        return getRepo().getKey(chosenKbId, pos);
-    }
-
-    public void putKey(Pair<Integer, Integer> pos, int char1) {
-        try {
-            getRepo().putKey(chosenKbId, pos, char1);
-        } catch (IOException e) {
-            Log.e("App", "I/O error", e);
-        }
-    }
-
-    private void editModeLiveDataSetValue(EditKbModeLine a) {
-        getEditModeMutableLiveData(a).setValue(editMode.equals(a));
-    }
-
-    private void editModeLiveDataSetValueAll() {
-        editModeLiveDataSetValue(new EditKbModeLine(1, 0));
-        editModeLiveDataSetValue(new EditKbModeLine(1, 1));
-        editModeLiveDataSetValue(new EditKbModeLine(0, 0));
-        editModeLiveDataSetValue(new EditKbModeLine(0, 1));
-        editModeLiveData.setValue(editMode);
-    }
-
-    public void flipEditModeLine(EditKbModeLine a) {
-        editMode = editMode instanceof EditKbModeLine && editMode.equals(a) ?
-                new EditKbModeKey() : a;
-        editModeLiveDataSetValueAll();
-        liveDataSetChosenKb();
-    }
-
-    private MutableLiveData<Boolean> getEditModeMutableLiveData(EditKbModeLine a) {
-        switch (a.getOp()) {
-            case 0:
-                switch (a.getCoord()) {
-                    case 0:
-                        return editModeDeleteRowLiveData;
-                    case 1:
-                        return editModeDeleteColumnLiveData;
-                    default:
-                        throw new IllegalArgumentException();
-                }
-            case 1:
-                switch (a.getCoord()) {
-                    case 0:
-                        return editModeInsertRowLiveData;
-                    case 1:
-                        return editModeInsertColumnLiveData;
-                    default:
-                        throw new IllegalArgumentException();
-                }
-            default:
-                throw new IllegalArgumentException();
-        }
-    }
-
-    public LiveData<Boolean> getEditModeLiveData(EditKbModeLine a) {
-        return getEditModeMutableLiveData(a);
-    }
-
-    public void editModeDoOp(int i) {
-        try {
-            getRepo().editLineDoOp(chosenKbId, (EditKbModeLine) editMode, i);
-        } catch (IOException e) {
-            Log.e("App", "I/O error", e);
-        }
-        editMode = new EditKbModeKey();
-        editModeLiveDataSetValueAll();
-        liveDataSetChosenKb();
+    @NonNull
+    public LiveData<Boolean> getIsInsertKbFormShown() {
+        return isInsertKbFormShown;
     }
 
     public void flipInsertKbForm() {
@@ -296,5 +200,119 @@ class EditKbVm extends AndroidViewModel {
         isInsertKbFormShown.setValue(false);
     }
 
+    private void chosenKbSetLd() {
+        chosenKbId.setValue(chosenKbIdI);
+    }
 
+    public void setChosenKb(int ix) {
+        chosenKbIdI = ix == -1 ? null : getRepo().kbIxToId(ix);
+        chosenKbSetLd();
+    }
+
+    @NonNull
+    private MutableLiveData<Boolean> getEditModeMutable(@NonNull EditKbModeLine a) {
+        switch (a.getOp()) {
+            case DELETE:
+                switch (a.getCoord()) {
+                    case ROW:
+                        return editModeDeleteRow;
+                    case COLUMN:
+                        return editModeDeleteColumn;
+                    default:
+                        throw new NoMatchingConstant();
+                }
+            case INSERT:
+                switch (a.getCoord()) {
+                    case ROW:
+                        return editModeInsertRow;
+                    case COLUMN:
+                        return editModeInsertColumn;
+                    default:
+                        throw new NoMatchingConstant();
+                }
+            default:
+                throw new NoMatchingConstant();
+        }
+    }
+
+    @NonNull
+    public LiveData<Boolean> getEditMode(@NonNull EditKbModeLine a) {
+        return getEditModeMutable(a);
+    }
+
+    private void editModeSetLd(@NonNull EditKbModeLine a) {
+        getEditModeMutable(a).setValue(editModeI.equals(a));
+    }
+
+    private void editModeSetLdAll() {
+        editModeSetLd(new EditKbModeLine(EditKbModeLine.Op.INSERT, EditKbModeLine.Coord.ROW));
+        editModeSetLd(new EditKbModeLine(EditKbModeLine.Op.INSERT, EditKbModeLine.Coord.COLUMN));
+        editModeSetLd(new EditKbModeLine(EditKbModeLine.Op.DELETE, EditKbModeLine.Coord.ROW));
+        editModeSetLd(new EditKbModeLine(EditKbModeLine.Op.DELETE, EditKbModeLine.Coord.COLUMN));
+        editMode.setValue(editModeI);
+    }
+
+    public void flipEditModeLine(@NonNull EditKbModeLine a) {
+        editModeI = editModeI instanceof EditKbModeLine && editModeI.equals(a) ?
+                new EditKbModeKey() : a;
+        editModeSetLdAll();
+        chosenKbSetLd();
+    }
+
+    public void editModeDoOp(int i) {
+        try {
+            getRepo().editLineDoOp(chosenKbIdI, (EditKbModeLine) editModeI, i);
+        } catch (IOException e) {
+            Log.e("App", "I/O error", e);
+        }
+        editModeI = new EditKbModeKey();
+        editModeSetLdAll();
+        chosenKbSetLd();
+    }
+
+    @NonNull
+    public LiveData<KbViewState> getKb() {
+        return kb;
+    }
+
+    public void copyKey(Pair<Integer, Integer> pos) {
+        final int char1 = getRepo().getKey(chosenKbIdI, pos);
+        if (char1 != Unicode.NO_CHAR) {
+            ((App) getApplication()).getCharClipboardRepo().get().insertItem(char1);
+            charToClipboard(getApplication().getApplicationContext(), char1);
+        }
+    }
+
+    /**
+     * Puts {@code char1} into the keyboard's key at {@code pos}.
+     */
+    public void putKey(@NonNull Pair<Integer, Integer> pos, int char1) {
+        try {
+            getRepo().putKey(chosenKbIdI, pos, char1);
+        } catch (IOException e) {
+            Log.e("App", "I/O error", e);
+        }
+    }
+
+    /**
+     * Executes {@code putKey(pos, char1)}
+     * if {@code char1} is not {@link ua.in.beroal.util.Unicode#NO_CHAR}.
+     */
+    public void putKeyIfFilled(@NonNull Pair<Integer, Integer> pos, int char1) {
+        if (char1 != Unicode.NO_CHAR) {
+            try {
+                getRepo().putKey(chosenKbIdI, pos, char1);
+            } catch (IOException e) {
+                Log.e("App", "I/O error", e);
+            }
+        }
+    }
+
+    public void clearKey(@NonNull Pair<Integer, Integer> pos) {
+        putKey(pos, Unicode.NO_CHAR);
+    }
+
+    public void pasteKey(@NonNull Pair<Integer, Integer> pos) {
+        putKeyIfFilled(pos, clipboardToChar(getApplication().getApplicationContext()));
+    }
 }

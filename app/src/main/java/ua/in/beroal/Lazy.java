@@ -2,6 +2,9 @@ package ua.in.beroal;
 
 import java8.util.function.Supplier;
 
+/**
+ * An object of class {@code T} that is created lazily.
+ */
 public class Lazy<T> {
     private T value;
     private Supplier<T> initialValueF;
@@ -14,10 +17,10 @@ public class Lazy<T> {
     }
 
     protected T initialValue() {
-        if (initialValueF != null) {
-            return initialValueF.get();
+        if (initialValueF == null) {
+            throw new IllegalStateException("initialValue is not overriden and a constructor argument was null.");
         } else {
-            throw new RuntimeException("TODO");
+            return initialValueF.get();
         }
     }
 

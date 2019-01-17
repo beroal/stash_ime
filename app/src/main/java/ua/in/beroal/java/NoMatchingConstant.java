@@ -1,22 +1,22 @@
 package ua.in.beroal.java;
 
-public class NonExhaustivePatternMatch extends RuntimeException {
-    public NonExhaustivePatternMatch() {
+public class NoMatchingConstant extends RuntimeException {
+    public NoMatchingConstant() {
     }
 
-    public NonExhaustivePatternMatch(String message) {
+    public NoMatchingConstant(String message) {
         super(message);
     }
 
-    public NonExhaustivePatternMatch(String message, Throwable cause) {
+    public NoMatchingConstant(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public NonExhaustivePatternMatch(Throwable cause) {
+    public NoMatchingConstant(Throwable cause) {
         super(cause);
     }
 
-    public NonExhaustivePatternMatch(
+    public NoMatchingConstant(
             String message, Throwable cause,
             boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);

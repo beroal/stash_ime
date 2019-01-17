@@ -42,10 +42,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".CpvActivity" />
+        <activity
+            android:name=".CpvActivity"
+            android:label="Choose a CPV"/>
         <activity
             android:name=".SearchCharActivity"
-            android:label="Unicode Char"
+            android:label="Unicode Explorer"
             android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -55,14 +57,11 @@
         </activity>
         <activity
             android:name=".EditKbSearchActivity"
-            android:label="Stash Keyboard"
+            android:label="Stash IM Settings"
             android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
     </application>
-
 </manifest>

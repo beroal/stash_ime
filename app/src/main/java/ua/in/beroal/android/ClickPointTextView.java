@@ -6,6 +6,9 @@ import android.support.v7.widget.AppCompatTextView;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
+/**
+ * A {@link AppCompatTextView} with {@link ClickPoint} enhancements.
+ */
 public class ClickPointTextView extends AppCompatTextView {
     private ClickPoint clickPoint;
 
@@ -27,8 +30,8 @@ public class ClickPointTextView extends AppCompatTextView {
         setClickable(true);
     }
 
-    public void setOnDragFromListener(ClickPoint.OnDragFromListener listener) {
-        clickPoint.setOnDragFromListener(listener);
+    public void setOnDragStartedListener(ClickPoint.OnDragStartedListener listener) {
+        clickPoint.setOnDragStartedListener(listener);
         setClickable(true);
     }
 

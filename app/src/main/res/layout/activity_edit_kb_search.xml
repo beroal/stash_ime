@@ -16,15 +16,13 @@
             android:id="@+id/edit_kb_fragment"
             android:name="ua.in.beroal.stash_ime.EditKbFragment"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            />
+            android:layout_height="wrap_content" />
 
         <fragment
             android:id="@+id/search_char_fragment"
             android:name="ua.in.beroal.stash_ime.SearchCharFragment"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-             />
+            android:layout_height="wrap_content" />
     </FrameLayout>
 
     <fragment

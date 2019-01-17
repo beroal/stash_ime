@@ -12,32 +12,32 @@ import ua.in.beroal.util.Unicode;
 
 import static ua.in.beroal.util.Android.inflateDoNotAttach;
 
-public class SearchCharVh extends Vh<CharRow> {
+public class SearchCharVh extends Vh<CharForView> {
     private TextView image;
-    private TextView code;
+    private TextView codePoint;
     private TextView name;
-    private Button copy;
     private int char1;
 
-    private SearchCharVh(@NonNull View v, Consumer<Integer> onItemClick) {
-        super(v);
-        image = (TextView) v.findViewById(R.id.char_row_image);
-        code = (TextView) v.findViewById(R.id.char_row_code);
-        name = (TextView) v.findViewById(R.id.char_row_name);
-        copy = (Button) v.findViewById(R.id.char_row_copy);
-        copy.setOnClickListener(v1 -> onItemClick.accept(char1));
+    public SearchCharVh(@NonNull View view, @NonNull Consumer<Integer> onItemClick) {
+        super(view);
+        image = (TextView) view.findViewById(R.id.char_row_image);
+        codePoint = (TextView) view.findViewById(R.id.char_row_code);
+        name = (TextView) view.findViewById(R.id.char_row_name);
+        ((Button) view.findViewById(R.id.char_row_copy))
+                .setOnClickListener(v1 -> onItemClick.accept(char1));
     }
 
-    public static SearchCharVh create(@NonNull ViewGroup parent, Consumer<Integer> onItemClick) {
-        final View v = inflateDoNotAttach(R.layout.char_row, parent);
-        return new SearchCharVh(v, onItemClick);
+    public static SearchCharVh create(@NonNull ViewGroup parent,
+                                      @NonNull Consumer<Integer> onItemClick) {
+        final View view = inflateDoNotAttach(R.layout.char_row, parent);
+        return new SearchCharVh(view, onItemClick);
     }
 
     @Override
-    public void setContents(CharRow charRow) {
-        image.setText(Unicode.codePointToString(charRow.getCodePoint()));
-        code.setText(String.format("%04X", charRow.getCodePoint()));
-        name.setText(charRow.getName());
-        char1 = charRow.getCodePoint();
+    public void setContents(CharForView charForView) {
+        image.setText(Unicode.codePointToString(charForView.getCodePoint()));
+        codePoint.setText(String.format("%04X", charForView.getCodePoint()));
+        name.setText(charForView.getName());
+        char1 = charForView.getCodePoint();
     }
 }

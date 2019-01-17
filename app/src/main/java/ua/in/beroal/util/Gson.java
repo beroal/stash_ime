@@ -1,7 +1,7 @@
 package ua.in.beroal.util;
 
+import android.support.annotation.NonNull;
 import android.support.v4.util.AtomicFile;
-import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -16,37 +16,46 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 
 public class Gson {
-    public static <T> T readJsonFromStream(InputStream in, Type typeOfT) throws IOException {
+    public static <T> T readJsonFromStream(@NonNull InputStream in, @NonNull Type typeOfT)
+            throws IOException {
         T r;
         try {
-            final InputStreamReader charIn = new InputStreamReader(new BufferedInputStream(in), "UTF-8");
-            try {
-                r = new com.google.gson.Gson().fromJson(new com.google.gson.stream.JsonReader(charIn), typeOfT);
-            } finally {
-                charIn.close();
+            try (InputStreamReader charIn = new InputStreamReader(
+                    new BufferedInputStream(in), "UTF-8")) {
+                r = new com.google.gson.Gson().fromJson(
+                        new com.google.gson.stream.JsonReader(charIn), typeOfT);
             }
         } catch (UnsupportedEncodingException e) {
-            Log.e("Search", "UTF-8 must be supported.", e);
-            System.exit(200);
-            r = null;
+            throw new IllegalStateException("UTF-8 must be supported.", e);
         }
         return r;
     }
 
-    public static <T> T readJsonFromAtomicFile(AtomicFile file, Type typeOfT) throws IOException {
+    public static <T> T readJsonFromAtomicFile(@NonNull AtomicFile file, @NonNull Type typeOfT)
+            throws IOException {
         T r;
-        final FileInputStream in = file.openRead();
-        try {
+        try (FileInputStream in = file.openRead()) {
             r = readJsonFromStream(in, typeOfT);
-        } finally {
-            in.close();
         }
         return r;
     }
 
-    public static <T> void writeJsonToAtomicFile(T a, Type typeOfT, AtomicFile file) throws IOException {
-        boolean written = false;
+    public static <T> void writeJsonToStream(T a, @NonNull Type typeOfT, @NonNull OutputStream out)
+            throws IOException {
+        try {
+            try (OutputStreamWriter charOut = new OutputStreamWriter(
+                    new BufferedOutputStream(out), "UTF-8")) {
+                new com.google.gson.Gson().toJson(a, typeOfT, charOut);
+            }
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException("UTF-8 must be supported.", e);
+        }
+    }
+
+    public static <T> void writeJsonToAtomicFile(T a, @NonNull Type typeOfT, @NonNull AtomicFile file)
+            throws IOException {
         final FileOutputStream out = file.startWrite();
+        boolean written = false;
         try {
             writeJsonToStream(a, typeOfT, out);
             written = true;
@@ -56,20 +65,6 @@ public class Gson {
             } else {
                 file.failWrite(out);
             }
-        }
-    }
-
-    private static <T> void writeJsonToStream(T a, Type typeOfT, OutputStream out) throws IOException {
-        try {
-            final OutputStreamWriter charOut = new OutputStreamWriter(new BufferedOutputStream(out), "UTF-8");
-            try {
-                new com.google.gson.Gson().toJson(a, typeOfT, charOut);
-            } finally {
-                charOut.close();
-            }
-        } catch (UnsupportedEncodingException e) {
-            Log.e("Search", "UTF-8 must be supported.", e);
-            System.exit(200);
         }
     }
 }

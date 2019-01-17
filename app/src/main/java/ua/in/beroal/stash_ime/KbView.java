@@ -2,12 +2,12 @@ package ua.in.beroal.stash_ime;
 
 import android.content.Context;
 import android.inputmethodservice.KeyboardView;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.GridLayout;
 import android.widget.TextView;
@@ -17,64 +17,76 @@ import java8.util.Optional;
 import static ua.in.beroal.util.Unicode.codePointToString;
 
 public class KbView extends FrameLayout {
+    @Nullable
     private KeyboardView.OnKeyboardActionListener mListener;
 
-    public KbView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
+    public KbView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
         setLayoutParams(new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT));
-
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     }
-    public void setOnKeyboardActionListener (KeyboardView.OnKeyboardActionListener listener) {
+
+    public KbView(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public KbView(Context context) {
+        this(context, null);
+    }
+
+    public void setOnKeyboardActionListener(KeyboardView.OnKeyboardActionListener listener) {
         mListener = listener;
     }
-    public void setContents(Optional<KbKeys> keysOptional) {
+
+    @NonNull
+    private TextView createKeyView(int rowI, int columnI, int char1) {
+        final TextView keyView = new TextView(getContext());
+        keyView.setTextSize(22);
+        keyView.setGravity(Gravity.CENTER);
+        final GridLayout.LayoutParams layoutParams = new GridLayout.LayoutParams(
+                GridLayout.spec(rowI, GridLayout.FILL),
+                GridLayout.spec(columnI, GridLayout.FILL, 1F));
+        keyView.setLayoutParams(layoutParams);
+        if (char1 != -1) {
+            keyView.setText(codePointToString(char1));
+            keyView.setOnClickListener(v -> {
+                if (this.mListener != null) {
+                    mListener.onPress(char1);
+                    mListener.onKey(char1, new int[]{char1});
+                    mListener.onRelease(char1);
+                }
+            });
+        }
+        return keyView;
+    }
+
+    public void setContents(@NonNull Optional<KbKeys> keysOptional) {
         Log.d("App", "KbView.setContents");
         if (getChildCount() != 0) {
             removeViewAt(0);
         }
         if (keysOptional.isEmpty()) {
-            TextView emptyV = new TextView(getContext());
-            emptyV.setText("no keyboard");
-            addView(emptyV);
+            TextView emptyView = new TextView(getContext());
+            emptyView.setText("no keyboard");
+            addView(emptyView);
         } else {
             final KbKeys keys = keysOptional.orElseThrow();
             GridLayout gridV = new GridLayout(getContext());
             gridV.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT));
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             gridV.setBackgroundColor(0xFFCCCCCC);
             gridV.setColumnCount(keys.getColumnCount());
-            int i = 0;
+            int rowI = 0;
             for (Iterable<Integer> row : keys.getKeys()) {
-                int j = 0;
+                int columnI = 0;
                 for (int char1 : row) {
-                    final TextView keyV = new TextView(getContext());
-                    keyV.setTextSize(22);
-                    keyV.setGravity(Gravity.CENTER);
-                    final GridLayout.LayoutParams layoutParams = new GridLayout.LayoutParams(
-                            GridLayout.spec(i, GridLayout.FILL),
-                            GridLayout.spec(j, GridLayout.FILL, 1F));
-                    keyV.setLayoutParams(layoutParams);
-                    if (char1 != -1) {
-                        keyV.setText(codePointToString(char1));
-                        keyV.setOnClickListener(v -> {
-                            if (this.mListener != null) {
-                                mListener.onPress(char1);
-                                mListener.onKey(char1, new int[] {char1});
-                                mListener.onRelease(char1);
-                            }
-                        });
-                    }
-
-                    gridV.addView(keyV);
-                    j++;
+                    final TextView keyView = createKeyView(rowI, columnI, char1);
+                    gridV.addView(keyView);
+                    columnI++;
                 }
-                i++;
+                rowI++;
             }
             addView(gridV);
         }
-
     }
 }

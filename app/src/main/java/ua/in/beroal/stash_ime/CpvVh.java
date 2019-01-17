@@ -1,7 +1,6 @@
 package ua.in.beroal.stash_ime;
 
 import android.support.annotation.NonNull;
-import android.support.v4.util.Pair;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -11,24 +10,24 @@ import ua.in.beroal.android.Vh;
 
 import static ua.in.beroal.util.Android.inflateDoNotAttach;
 
-class CpvVh extends Vh<Pair<String, Cpv>> {
-    private TextView v;
+class CpvVh extends Vh<CpvForView> {
+    private TextView view;
     private Cpv cpv;
 
-    CpvVh(@NonNull View v, Consumer<Cpv> onItemClick) {
-        super(v);
-        this.v = (TextView) v;
-        this.v.setOnClickListener(v1 -> onItemClick.accept(cpv));
+    public CpvVh(@NonNull View view, @NonNull Consumer<Cpv> onItemClick) {
+        super(view);
+        this.view = (TextView) view;
+        this.view.setOnClickListener(view1 -> onItemClick.accept(cpv));
     }
 
-    static CpvVh create(@NonNull ViewGroup parent, Consumer<Cpv> onItemClick) {
-        final View v = inflateDoNotAttach(R.layout.cpv, parent);
-        return new CpvVh(v, onItemClick);
+    public static CpvVh create(@NonNull ViewGroup parent, @NonNull Consumer<Cpv> onItemClick) {
+        final View view = inflateDoNotAttach(R.layout.cpv, parent);
+        return new CpvVh(view, onItemClick);
     }
 
     @Override
-    public void setContents(Pair<String, Cpv> a) {
-        v.setText(a.first);
-        this.cpv = a.second;
+    public void setContents(@NonNull CpvForView a) {
+        view.setText(a.getName());
+        this.cpv = a.getCpv();
     }
 }

@@ -4,6 +4,9 @@ import android.content.Context;
 
 import java8.util.function.Function;
 
+/**
+ * An object of class {@code T} that is created lazily from a {@link Context}.
+ */
 public class LazyWithContext<T> {
     private T value;
     private Function<Context, T> initialValueF;
@@ -16,10 +19,10 @@ public class LazyWithContext<T> {
     }
 
     protected T initialValue(Context context) {
-        if (initialValueF != null) {
-            return initialValueF.apply(context);
+        if (initialValueF == null) {
+            throw new IllegalStateException("initialValue is not overriden and a constructor argument was null.");
         } else {
-            throw new RuntimeException("TODO");
+            return initialValueF.apply(context);
         }
     }
 

@@ -1,8 +1,13 @@
-package ua.in.beroal.util.unicode;
+package ua.in.beroal.stash_ime;
 
 import android.content.Intent;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
 
 public class Cpv implements Parcelable {
     public static final String CONTAINS_FIELD = "contains";
@@ -14,6 +19,14 @@ public class Cpv implements Parcelable {
     public Cpv(int propertyId, int valueId) {
         this.propertyId = propertyId;
         this.valueId = valueId;
+    }
+
+    public String getPropertyName(int nameChoice) {
+        return UCharacter.getPropertyName(getPropertyId(), nameChoice);
+    }
+
+    public String getValueName(int nameChoice) {
+        return UCharacter.getPropertyValueName(getPropertyId(), getValueId(), nameChoice);
     }
 
     public int getPropertyId() {
@@ -46,7 +59,7 @@ public class Cpv implements Parcelable {
         }
     };
 
-    public static void writeToIntent(Intent intent, Cpv value) {
+    public static void writeToIntent(@NonNull Intent intent, @Nullable Cpv value) {
         if (value == null) {
             intent.putExtra(CONTAINS_FIELD, false);
         } else {
@@ -57,12 +70,23 @@ public class Cpv implements Parcelable {
 
     }
 
-    public static Cpv readFromIntent(Intent intent) {
+    public static Cpv readFromIntent(@NonNull Intent intent) {
         if (!intent.getBooleanExtra(CONTAINS_FIELD, false)) {
             return null;
         } else {
-            return new Cpv(intent.getIntExtra(PROPERTY_ID_FIELD, -1),
-                    intent.getIntExtra(VALUE_ID_FIELD, -1));
+            if (!(intent.hasExtra(PROPERTY_ID_FIELD) && intent.hasExtra(VALUE_ID_FIELD))) {
+                throw new IllegalArgumentException(
+                        "An intent does not contain a character property value.");
+            } else {
+                Cpv cpv = new Cpv(intent.getIntExtra(PROPERTY_ID_FIELD, -1),
+                        intent.getIntExtra(VALUE_ID_FIELD, -1));
+                try {
+                    cpv.getValueName(UProperty.NameChoice.LONG);
+                } catch (IllegalArgumentException e) {
+                    cpv = null;
+                }
+                return cpv;
+            }
         }
     }
 }

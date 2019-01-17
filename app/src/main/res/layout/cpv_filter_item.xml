@@ -3,14 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal">
+
     <TextView
-        android:id="@+id/char_image"
+        android:id="@+id/cpv_filter_item_name"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"/>
+        android:layout_weight="1" />
+
     <Button
-        android:id="@+id/delete"
+        android:id="@+id/cpv_filter_item_delete"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="x"/>
+        android:text="x" />
 </LinearLayout>

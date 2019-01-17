@@ -8,14 +8,20 @@ import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.text.UnicodeSet;
 
 import io.reactivex.Observable;
+import ua.in.beroal.java.NoMatchingConstant;
 
 import static ua.in.beroal.util.ReactiveX.rangeEdges;
 
 public class Unicode {
-    public enum CharPropertyType { BINARY, INTEGER, MASK, DOUBLE, STRING, OTHER }
+    /**
+     * An integer number that can be used where Unicode code points are used.
+     * It means the absence of a Unicode code point.
+     */
+    public static final int NO_CHAR = -1;
 
     @SuppressWarnings("deprecation")
-    public static Observable<Integer> getPropertyRange(CharPropertyType a) {
+    @NonNull
+    public static Observable<Integer> getPropertyRange(@NonNull CharPropertyType a) {
         switch (a) {
             case BINARY:
                 return rangeEdges(UProperty.BINARY_START, UProperty.BINARY_LIMIT);
@@ -29,24 +35,30 @@ public class Unicode {
                 return rangeEdges(UProperty.STRING_START, UProperty.STRING_LIMIT);
             case OTHER:
                 return rangeEdges(UProperty.OTHER_PROPERTY_START, UProperty.OTHER_PROPERTY_LIMIT);
+            default:
+                throw new NoMatchingConstant();
         }
-        throw new IllegalArgumentException("TODO");
     }
 
+    @NonNull
     public static Observable<Integer> getPropertyValueRange(int propertyId) {
         int start = UCharacter.getIntPropertyMinValue(propertyId);
         return Observable.range(start,
                 UCharacter.getIntPropertyMaxValue(propertyId) + 1 - start);
     }
 
-    public static Observable<Integer> getEntryRangeObservable(UnicodeSet.EntryRange range) {
+    @NonNull
+    public static Observable<Integer> getEntryRangeObservable(@NonNull UnicodeSet.EntryRange range) {
         return rangeEdges(range.codepoint, range.codepointEnd);
     }
+
     @NonNull
     public static String codePointToString(int a) {
-        return UCharacter.isBMP(a) ? new String(new char[] {(char) a})
-                : new String(new char[] {Character.highSurrogate(a), Character.lowSurrogate(a)});
+        return UCharacter.isBMP(a) ? new String(new char[]{(char) a})
+                : new String(new char[]{Character.highSurrogate(a), Character.lowSurrogate(a)});
     }
+
+    @NonNull
     public static UnicodeSet standardCharSet() {
         return new UnicodeSet()
                 .applyIntPropertyValue(UProperty.GENERAL_CATEGORY,
@@ -60,14 +72,16 @@ public class Unicode {
                 .complement();
     }
 
-    public static Observable<Integer> setToObservable(UnicodeSet set) {
+    @NonNull
+    public static Observable<Integer> setToObservable(@NonNull UnicodeSet set) {
         return Observable.fromIterable(set.ranges()).concatMap(Unicode::getEntryRangeObservable);
     }
 
-
+    @NonNull
     public static String getCharName(int a) {
         final String name = UCharacter.getName(a);
         return name == null ? "" : name;
     }
 
+    public enum CharPropertyType {BINARY, INTEGER, MASK, DOUBLE, STRING, OTHER}
 }

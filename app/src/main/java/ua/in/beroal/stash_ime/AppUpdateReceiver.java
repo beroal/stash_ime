@@ -9,6 +9,9 @@ public class AppUpdateReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d("App", "ACTION_MY_PACKAGE_REPLACED");
+        /* If this application has been updated,
+         * the OS deleted IM subtypes (corresponding to user's keyboards),
+         * and a {@link EditKbRepo} must be created. */
         App.getEditKbRepoContext().get(context);
     }
 }

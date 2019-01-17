@@ -6,11 +6,12 @@ import android.view.ViewGroup;
 
 import java.util.Collections;
 import java.util.List;
+
 import java8.util.function.Function;
 
 public class ListAdapter<Item> extends RecyclerView.Adapter<Vh<Item>> {
-    private Function<ViewGroup, Vh<Item>> vhFactory;
     protected List<Item> data;
+    private Function<ViewGroup, Vh<Item>> vhFactory;
 
     public ListAdapter() {
         this(Collections.emptyList());
@@ -29,7 +30,13 @@ public class ListAdapter<Item> extends RecyclerView.Adapter<Vh<Item>> {
         notifyDataSetChanged();
     }
 
-    @NonNull @Override
+    @Override
+    public int getItemCount() {
+        return data.size();
+    }
+
+    @NonNull
+    @Override
     public Vh<Item> onCreateViewHolder(@NonNull ViewGroup parent, int i) {
         return vhFactory.apply(parent);
     }
@@ -39,8 +46,4 @@ public class ListAdapter<Item> extends RecyclerView.Adapter<Vh<Item>> {
         vh.setContents(data.get(i));
     }
 
-    @Override
-    public int getItemCount() {
-        return data.size();
-    }
 }
