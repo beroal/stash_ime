@@ -26,7 +26,8 @@ import static ua.in.beroal.util.Android.charToClipboard;
 import static ua.in.beroal.util.Android.clipboardToChar;
 import static ua.in.beroal.util.Android.map2;
 
-class EditKbVm extends AndroidViewModel {
+// Was crashing on IME settings opening attempt
+public class EditKbVm extends AndroidViewModel {
     private boolean initialized = false;
     private static final String CHOSEN_KB_ID_FIELD = "chosen_kb_id";
     private static final String EDIT_MODE_FIELD = "edit_mode";
