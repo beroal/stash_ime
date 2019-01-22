@@ -9,13 +9,11 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.support.v7.widget.SearchView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -74,21 +72,19 @@ public class SearchCharFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_search_char, container, false);
-        final EditText wordsView = (EditText) rootView.findViewById(R.id.words_s);
-        wordsView.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+        ((SearchView) rootView.findViewById(R.id.search_char_words))
+                .setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                    @Override
+                    public boolean onQueryTextSubmit(String query) {
+                        return false;
+                    }
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                vm.setWordsS(s);
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
-        });
+                    @Override
+                    public boolean onQueryTextChange(String wordsS) {
+                        vm.setWordsS(wordsS);
+                        return true;
+                    }
+                });
         final ViewGroup cpvFilterView = rootView.findViewById(R.id.cpv_filter);
         vm.getCpvFilter().observe(this, cpvList -> setCpvFilterView(cpvFilterView, cpvList));
         initCharRowList(rootView);

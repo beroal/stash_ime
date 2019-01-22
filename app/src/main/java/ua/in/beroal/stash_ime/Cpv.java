@@ -9,12 +9,15 @@ import android.support.annotation.Nullable;
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
 
-public class Cpv implements Parcelable {
+/**
+ * Immutable.
+ */
+public final class Cpv implements Parcelable {
     public static final String CONTAINS_FIELD = "contains";
     public static final String PROPERTY_ID_FIELD = "property_id";
     public static final String VALUE_ID_FIELD = "value_id";
-    private int propertyId;
-    private int valueId;
+    private final int propertyId;
+    private final int valueId;
 
     public Cpv(int propertyId, int valueId) {
         this.propertyId = propertyId;

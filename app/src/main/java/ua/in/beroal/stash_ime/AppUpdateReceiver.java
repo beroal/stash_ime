@@ -8,10 +8,12 @@ import android.util.Log;
 public class AppUpdateReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d("App", "ACTION_MY_PACKAGE_REPLACED");
-        /* If this application has been updated,
-         * the OS deleted IM subtypes (corresponding to user's keyboards),
-         * and a {@link EditKbRepo} must be created. */
-        App.getEditKbRepoContext().get(context);
+        if (intent.getAction() != null && intent.getAction() == Intent.ACTION_MY_PACKAGE_REPLACED) {
+            Log.d("App", "ACTION_MY_PACKAGE_REPLACED");
+            /* If this application has been updated,
+             * the OS deleted this input method's subtypes (corresponding to user's keyboards),
+             * so the subtypes need to be sent to OS by creating a {@link EditKbRepo}. */
+            App.getEditKbRepoContext().get(context);
+        }
     }
 }

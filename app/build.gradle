@@ -7,7 +7,7 @@ android {
         minSdkVersion 24
         targetSdkVersion 28
         versionCode 1
-        versionName '1.1'
+        versionName '1.2'
     }
     buildTypes {
         release {
@@ -34,6 +34,4 @@ dependencies {
     implementation 'com.ibm.icu:icu4j:63.1'
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'io.reactivex.rxjava2:rxjava:2.2.0'
-    implementation 'com.ice.restring:restring:1.0.0'
-    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
 }

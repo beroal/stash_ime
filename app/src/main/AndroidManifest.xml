@@ -44,7 +44,7 @@
         </activity>
         <activity
             android:name=".CpvActivity"
-            android:label="Choose a CPV"/>
+            android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:name=".SearchCharActivity"
             android:label="Unicode Explorer"

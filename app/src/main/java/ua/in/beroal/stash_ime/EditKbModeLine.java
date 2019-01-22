@@ -1,11 +1,11 @@
 package ua.in.beroal.stash_ime;
 
 /**
- * A mode for working with keyboard rows and columns.
+ * A mode for working with keyboard rows and columns. Immutable.
  */
-public class EditKbModeLine extends EditKbMode implements Cloneable {
-    private Op op;
-    private Coord coord;
+public final class EditKbModeLine extends EditKbMode implements Cloneable {
+    private final Op op;
+    private final Coord coord;
 
     public EditKbModeLine(Op op, Coord coord) {
         this.op = op;

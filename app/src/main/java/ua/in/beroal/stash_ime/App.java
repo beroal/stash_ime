@@ -96,7 +96,7 @@ public class App extends Application {
                 BuildConfig.APPLICATION_ID, MODE_PRIVATE);
         /* If this is the first run of this application on this device,
          * the OS does not know about user's keyboards,
-         * and a {@link EditKbRepo} must be created. */
+         * so the subtypes need to be sent to OS by creating a {@link EditKbRepo}. */
         if (!sharedPreferences.getBoolean(NON_FIRST_RUN_FIELD, false)) {
             getEditKbRepo();
             sharedPreferences.edit().putBoolean(NON_FIRST_RUN_FIELD, true).apply();
