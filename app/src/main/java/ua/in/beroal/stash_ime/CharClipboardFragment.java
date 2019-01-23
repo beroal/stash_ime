@@ -57,6 +57,7 @@ public class CharClipboardFragment extends Fragment {
             listView.setLayoutParams(new ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             int i = 0;
+            // TODO if it's nullable, check it plz :)
             for (Integer char1 : chars) {
                 final View itemView = getLayoutInflater().inflate(
                         R.layout.char_token, listView, false);
