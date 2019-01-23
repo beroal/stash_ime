@@ -33,8 +33,8 @@ public class CharClipboardFragment extends Fragment {
         final FrameLayout rootView = new FrameLayout(getContext());
         rootView.setLayoutParams(new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        final CharClipboardRepo charClipboardRepo = getApp().getCharClipboardRepo().get();
-        charClipboardRepo.getCharClipboard().observe(this, new Observer1(rootView));
+        getApp().getCharClipboardRepo().get().getCharClipboard()
+                .observe(this, new Observer1(rootView));
         return rootView;
     }
 
@@ -49,33 +49,38 @@ public class CharClipboardFragment extends Fragment {
 
         @Override
         public void onChanged(@Nullable List<Integer> chars) {
-            if (rootView.getChildCount() != 0) {
-                rootView.removeViewAt(0);
+            if (chars == null) {
+                throw new IllegalArgumentException(
+                        "CharClipboardRepo.getCharClipboard must not send null");
+            } else {
+                if (rootView.getChildCount() != 0) {
+                    rootView.removeViewAt(0);
+                }
+                final LinearLayout listView = new LinearLayout(
+                        CharClipboardFragment.this.getContext());
+                listView.setOrientation(LinearLayout.HORIZONTAL);
+                listView.setLayoutParams(new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                int i = 0;
+                for (Integer char1 : chars) {
+                    final View itemView = getLayoutInflater().inflate(
+                            R.layout.char_token, listView, false);
+                    final ClickPointTextView charImageV =
+                            (ClickPointTextView) itemView.findViewById(R.id.char_image);
+                    charImageV.setText(Unicode.codePointToString(char1));
+                    charImageV.setTag(i);
+                    charImageV.setOnClickPointListener((v, x, y) -> charClipboardRepo
+                            .itemToClipboard((Integer) v.getTag()));
+                    charImageV.setOnDragStartedListener((v, x, y) -> v.startDragAndDrop(
+                            ClipData.newPlainText("", Unicode.codePointToString(char1)),
+                            new View.DragShadowBuilder(v),
+                            null,
+                            0));
+                    listView.addView(itemView);
+                    i++;
+                }
+                rootView.addView(listView);
             }
-            final LinearLayout listView = new LinearLayout(CharClipboardFragment.this.getContext());
-            listView.setOrientation(LinearLayout.HORIZONTAL);
-            listView.setLayoutParams(new ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            int i = 0;
-            // TODO if it's nullable, check it plz :)
-            for (Integer char1 : chars) {
-                final View itemView = getLayoutInflater().inflate(
-                        R.layout.char_token, listView, false);
-                final ClickPointTextView charImageV =
-                        (ClickPointTextView) itemView.findViewById(R.id.char_image);
-                charImageV.setText(Unicode.codePointToString(char1));
-                charImageV.setTag(i);
-                charImageV.setOnClickPointListener((v, x, y) -> charClipboardRepo
-                        .itemToClipboard((Integer) v.getTag()));
-                charImageV.setOnDragStartedListener((v, x, y) -> v.startDragAndDrop(
-                        ClipData.newPlainText("", Unicode.codePointToString(char1)),
-                        new View.DragShadowBuilder(v),
-                        null,
-                        0));
-                listView.addView(itemView);
-                i++;
-            }
-            rootView.addView(listView);
         }
     }
 }

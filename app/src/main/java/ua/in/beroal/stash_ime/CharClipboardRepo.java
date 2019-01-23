@@ -25,6 +25,7 @@ public class CharClipboardRepo {
     }.getType();
     private final Context context;
     private AtomicFile file;
+    @NonNull
     private List<Integer> charClipboardI; /* TODO replace with Deque */
     private MutableLiveData<List<Integer>> charClipboard = new MutableLiveData<>();
 
@@ -45,6 +46,9 @@ public class CharClipboardRepo {
         }
     }
 
+    /**
+     * @return a result such as its observed values are not {@code null}
+     */
     @NonNull
     public LiveData<List<Integer>> getCharClipboard() {
         return charClipboard;

@@ -11,7 +11,6 @@ import android.support.v4.util.Pair;
 import android.util.Log;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -26,15 +25,14 @@ import static ua.in.beroal.util.Android.charToClipboard;
 import static ua.in.beroal.util.Android.clipboardToChar;
 import static ua.in.beroal.util.Android.map2;
 
-// Was crashing on IME settings opening attempt
 public class EditKbVm extends AndroidViewModel {
-    private boolean initialized = false;
     private static final String CHOSEN_KB_ID_FIELD = "chosen_kb_id";
     private static final String EDIT_MODE_FIELD = "edit_mode";
     private static final String EDIT_MODE_LINE_OP_FIELD = "edit_mode_line_op";
     private static final String EDIT_MODE_LINE_COORD_FIELD = "edit_mode_line_coord";
     private static final String IS_INSERT_KB_FORM_SHOWN_FIELD = "is_insert_kb_form_shown";
     private final MutableLiveData<EditKbMode> editMode = new MutableLiveData<>();
+    private boolean initialized = false;
     private String chosenKbIdI;
     private String insertChosenKbId;
     private MutableLiveData<String> chosenKbId = new MutableLiveData<>();
