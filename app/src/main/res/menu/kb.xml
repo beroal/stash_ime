@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/insert_kb_form_flip"
+        android:title="Add keyboard" />
+    <item
+        android:id="@+id/enable_kb"
+        android:title="Enable keyboards" />
+    <item
+        android:id="@+id/export_kb"
+        android:title="Export keyboard" />
+    <item
+        android:id="@+id/delete_kb"
+        android:title="Delete keyboard" />
+</menu>
