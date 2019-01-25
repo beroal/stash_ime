@@ -77,7 +77,7 @@ public class Ime extends InputMethodService
         }
         this.kbId.setValue(Optional.ofNullable(kbId));
         kbKeys.observe(this, kbView::setContents);
-        /*TODO if chosen kb is deleted*/
+        /*TODO if chosen keyboard is deleted*/
         return kbView;
     }
 

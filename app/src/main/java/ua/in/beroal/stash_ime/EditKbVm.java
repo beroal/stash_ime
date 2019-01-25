@@ -4,12 +4,14 @@ import android.app.Application;
 import android.arch.lifecycle.AndroidViewModel;
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MutableLiveData;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 import android.util.Log;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -33,9 +35,9 @@ public class EditKbVm extends AndroidViewModel {
     private static final String IS_INSERT_KB_FORM_SHOWN_FIELD = "is_insert_kb_form_shown";
     private final MutableLiveData<EditKbMode> editMode = new MutableLiveData<>();
     private boolean initialized = false;
-    private String chosenKbIdI;
-    private String insertChosenKbId;
-    private MutableLiveData<String> chosenKbId = new MutableLiveData<>();
+    @NonNull
+    private Optional<String> chosenKbIdI;
+    private MutableLiveData<Optional<String>> chosenKbId = new MutableLiveData<>();
     private EditKbMode editModeI;
     private MutableLiveData<Boolean> editModeInsertRow = new MutableLiveData<>();
     private MutableLiveData<Boolean> editModeDeleteRow = new MutableLiveData<>();
@@ -51,11 +53,7 @@ public class EditKbVm extends AndroidViewModel {
         emptyKb.setValue(Optional.empty());
         kbListSel = map(getRepo().getKbList(),
                 kbList -> {
-                    String oldKbId = chosenKbIdI;
-                    if (insertChosenKbId != null) {
-                        chosenKbIdI = insertChosenKbId;
-                        insertChosenKbId = null;
-                    }
+                    Optional<String> oldKbId = chosenKbIdI;
                     final int chosenKbIx = adaptChosenKbId(kbList);
                     if (!Objects.equals(chosenKbIdI, oldKbId)) {
                         chosenKbSetLd();
@@ -63,8 +61,8 @@ public class EditKbVm extends AndroidViewModel {
                     return new Pair<>(chosenKbIx, kbList);
                 });
         LiveData<Optional<KbKeys>> kbKeysLiveData = switchMap(chosenKbId,
-                kbId -> kbId == null ? emptyKb
-                        : map(getRepo().getKeys(kbId), Optional::of));
+                kbId -> kbId.isEmpty() ? emptyKb
+                        : getRepo().getKeysOptional(kbId.orElseThrow()));
         kb = map2(editMode, kbKeysLiveData, KbViewState::new);
     }
 
@@ -75,10 +73,10 @@ public class EditKbVm extends AndroidViewModel {
      */
     private int adaptChosenKbId(@NonNull List<String> kbList) {
         final int i2;
-        if (chosenKbIdI == null) {
+        if (chosenKbIdI.isEmpty()) {
             i2 = kbList.size() == 0 ? -1 : 0;
         } else {
-            final int i = Collections.binarySearch(kbList, chosenKbIdI);
+            final int i = Collections.binarySearch(kbList, chosenKbIdI.orElseThrow());
             if (i >= 0) {
                 i2 = i;
             } else {
@@ -88,7 +86,7 @@ public class EditKbVm extends AndroidViewModel {
                         : i1;
             }
         }
-        chosenKbIdI = i2 == -1 ? null : kbList.get(i2);
+        chosenKbIdI = i2 == -1 ? Optional.empty() : Optional.of(kbList.get(i2));
         return i2;
     }
 
@@ -116,7 +114,7 @@ public class EditKbVm extends AndroidViewModel {
     }
 
     public void saveInstanceState(@NonNull Bundle outState) {
-        outState.putString(CHOSEN_KB_ID_FIELD, chosenKbIdI);
+        outState.putString(CHOSEN_KB_ID_FIELD, chosenKbIdI.orElse(null));
         writeEditModeToBundle(outState);
         outState.putBoolean(IS_INSERT_KB_FORM_SHOWN_FIELD, isInsertKbFormShown.getValue());
     }
@@ -143,14 +141,14 @@ public class EditKbVm extends AndroidViewModel {
         if (!initialized) {
             final boolean isInsertKbFormShownValue;
             if (inState == null) {
-                chosenKbIdI = null;
+                chosenKbIdI = Optional.empty();
                 editModeI = new EditKbModeKey();
                 isInsertKbFormShownValue = false;
             } else {
-                chosenKbIdI = inState.getString(CHOSEN_KB_ID_FIELD);
+                chosenKbIdI = Optional.ofNullable(inState.getString(CHOSEN_KB_ID_FIELD));
+                adaptChosenKbId(getRepo().getKbList().getValue());
                 readEditModeFromBundle(inState);
                 isInsertKbFormShownValue = inState.getBoolean(IS_INSERT_KB_FORM_SHOWN_FIELD);
-
             }
             chosenKbSetLd();
             isInsertKbFormShown.setValue(isInsertKbFormShownValue);
@@ -164,26 +162,37 @@ public class EditKbVm extends AndroidViewModel {
         return kbListSel;
     }
 
-    public void insertKb(@NonNull String kbId) {
-        insertChosenKbId = kbId;
+    public void insertKbCreate(@NonNull String kbId) {
         try {
-            final boolean success;
-            try {
-                success = getRepo().insertKb(kbId);
-            } finally {
-                insertChosenKbId = null;
-            }
-            if (!success) {
+            if (!getRepo().insertKbCreate(kbId)) {
                 Log.e("App", "A keyboard with this name exists.");
+            } else {
+                chosenKbIdI = Optional.of(kbId);
+                getRepo().kbListSetLdPublic();
             }
         } catch (IOException e) {
             Log.e("App", "I/O error", e);
         }
+    }
 
+    public void insertKbImport(@NonNull String kbId, @NonNull Uri uri) {
+        try {
+            if (!getRepo().insertKbImport(kbId, uri)) {
+                Log.e("App", "A keyboard with this name exists.");
+            } else {
+                chosenKbIdI = Optional.of(kbId);
+                getRepo().kbListSetLdPublic();
+            }
+        } catch (IOException e) {
+            Log.e("App", "I/O error", e);
+        }
     }
 
     public void deleteKb() {
-        getRepo().deleteKb(chosenKbIdI);
+        chosenKbIdI.ifPresent(a -> {
+            getRepo().deleteKb(a);
+            getRepo().kbListSetLdPublic();
+        });
     }
 
     @NonNull
@@ -199,12 +208,24 @@ public class EditKbVm extends AndroidViewModel {
         isInsertKbFormShown.setValue(false);
     }
 
+    public void exportKb(@NonNull Uri uri) {
+        chosenKbIdI.ifPresent(kbId -> {
+            try {
+                getRepo().exportKb(kbId, uri);
+            } catch (FileNotFoundException e) {
+                Log.e("App", "I/O error", e);
+            } catch (IOException e) {
+                Log.e("App", "I/O error", e);
+            }
+        });
+    }
+
     private void chosenKbSetLd() {
         chosenKbId.setValue(chosenKbIdI);
     }
 
     public void setChosenKb(int ix) {
-        chosenKbIdI = ix == -1 ? null : getRepo().kbIxToId(ix);
+        chosenKbIdI = ix == -1 ? Optional.empty() : Optional.of(getRepo().kbIxToId(ix));
         chosenKbSetLd();
     }
 
@@ -255,18 +276,19 @@ public class EditKbVm extends AndroidViewModel {
         editModeI = editModeI instanceof EditKbModeLine && editModeI.equals(a) ?
                 new EditKbModeKey() : a;
         editModeSetLdAll();
-        chosenKbSetLd();
     }
 
+    /**
+     * A keyboard must be chosen.
+     */
     public void editModeDoOp(int i) {
         try {
-            getRepo().editLineDoOp(chosenKbIdI, (EditKbModeLine) editModeI, i);
+            getRepo().editLineDoOp(chosenKbIdI.orElseThrow(), (EditKbModeLine) editModeI, i);
         } catch (IOException e) {
             Log.e("App", "I/O error", e);
         }
         editModeI = new EditKbModeKey();
         editModeSetLdAll();
-        chosenKbSetLd();
     }
 
     @NonNull
@@ -274,8 +296,11 @@ public class EditKbVm extends AndroidViewModel {
         return kb;
     }
 
-    public void copyKey(Pair<Integer, Integer> pos) {
-        final int char1 = getRepo().getKey(chosenKbIdI, pos);
+    /**
+     * A keyboard must be chosen.
+     */
+    public void copyKey(@NonNull Pair<Integer, Integer> pos) {
+        final int char1 = getRepo().getKey(chosenKbIdI.orElseThrow(), pos);
         if (char1 != Unicode.NO_CHAR) {
             ((App) getApplication()).getCharClipboardRepo().get().insertItem(char1);
             charToClipboard(getApplication().getApplicationContext(), char1);
@@ -283,11 +308,11 @@ public class EditKbVm extends AndroidViewModel {
     }
 
     /**
-     * Puts {@code char1} into the keyboard's key at {@code pos}.
+     * Puts {@code char1} into the keyboard's key at {@code pos}. A keyboard must be chosen.
      */
     public void putKey(@NonNull Pair<Integer, Integer> pos, int char1) {
         try {
-            getRepo().putKey(chosenKbIdI, pos, char1);
+            getRepo().putKey(chosenKbIdI.orElseThrow(), pos, char1);
         } catch (IOException e) {
             Log.e("App", "I/O error", e);
         }
@@ -296,11 +321,12 @@ public class EditKbVm extends AndroidViewModel {
     /**
      * Executes {@code putKey(pos, char1)}
      * if {@code char1} is not {@link ua.in.beroal.util.Unicode#NO_CHAR}.
+     * A keyboard must be chosen.
      */
     public void putKeyIfFilled(@NonNull Pair<Integer, Integer> pos, int char1) {
         if (char1 != Unicode.NO_CHAR) {
             try {
-                getRepo().putKey(chosenKbIdI, pos, char1);
+                getRepo().putKey(chosenKbIdI.orElseThrow(), pos, char1);
             } catch (IOException e) {
                 Log.e("App", "I/O error", e);
             }
@@ -313,5 +339,10 @@ public class EditKbVm extends AndroidViewModel {
 
     public void pasteKey(@NonNull Pair<Integer, Integer> pos) {
         putKeyIfFilled(pos, clipboardToChar(getApplication().getApplicationContext()));
+    }
+
+    @NonNull
+    public CharSequence getExportKbFileName() {
+        return (chosenKbIdI.orElse("keyboard")) + ".json";
     }
 }

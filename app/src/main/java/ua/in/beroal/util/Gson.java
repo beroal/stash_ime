@@ -52,7 +52,8 @@ public class Gson {
         }
     }
 
-    public static <T> void writeJsonToAtomicFile(T a, @NonNull Type typeOfT, @NonNull AtomicFile file)
+    public static <T> void writeJsonToAtomicFile(
+            T a, @NonNull Type typeOfT, @NonNull AtomicFile file)
             throws IOException {
         final FileOutputStream out = file.startWrite();
         boolean written = false;

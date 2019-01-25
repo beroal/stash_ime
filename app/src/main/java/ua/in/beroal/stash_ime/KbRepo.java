@@ -2,19 +2,25 @@ package ua.in.beroal.stash_ime;
 
 import android.arch.lifecycle.LiveData;
 import android.arch.lifecycle.MutableLiveData;
+import android.os.ParcelFileDescriptor;
+import android.support.annotation.NonNull;
 import android.support.v4.util.AtomicFile;
 import android.support.v4.util.Pair;
 
 import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
 import java8.util.Optional;
 
 import static ua.in.beroal.util.Gson.readJsonFromAtomicFile;
+import static ua.in.beroal.util.Gson.readJsonFromStream;
 import static ua.in.beroal.util.Gson.writeJsonToAtomicFile;
+import static ua.in.beroal.util.Gson.writeJsonToStream;
 
 /**
  * Accesses and caches a keyboard in non-volatile memory.
@@ -31,9 +37,8 @@ public class KbRepo {
     /**
      * @param read Read this keyboard from non-volatile memory.
      */
-    public KbRepo(File kbFile, boolean read) throws IOException {
-        name = kbFile.getName();
-        file = new AtomicFile(kbFile);
+    public KbRepo(@NonNull File kbFile, boolean read) throws IOException {
+        init(kbFile);
         if (read) {
             keysI = readJsonFromAtomicFile(file, KbRepo.KB_KEYS_TYPE);
             keysSetLd();
@@ -43,24 +48,38 @@ public class KbRepo {
         }
     }
 
+    public KbRepo(@NonNull File kbFile, @NonNull ParcelFileDescriptor fd) throws IOException {
+        init(kbFile);
+        keysI = readJsonFromStream(new FileInputStream(fd.getFileDescriptor()), KbRepo.KB_KEYS_TYPE);
+        writeKbLd();
+    }
+
+    private void init(@NonNull File kbFile) {
+        name = kbFile.getName();
+        file = new AtomicFile(kbFile);
+    }
+
     private void writeKbLd() throws IOException {
         writeJsonToAtomicFile(keysI, KB_KEYS_TYPE, file);
         keysSetLd();
     }
 
+    @NonNull
     public String getName() {
         return name;
     }
 
+    @NonNull
     public LiveData<KbKeys> getKeys() {
         return keys;
     }
 
+    @NonNull
     public LiveData<Optional<KbKeys>> getKeysOptional() {
         return keysOptional;
     }
 
-    public void editLineDoOp(EditKbModeLine editMode, int i) throws IOException {
+    public void editLineDoOp(@NonNull EditKbModeLine editMode, int i) throws IOException {
         keysI.editLineDoOp(editMode, i);
         writeKbLd();
     }
@@ -75,13 +94,16 @@ public class KbRepo {
         file.delete();
     }
 
-    public int getKey(Pair<Integer, Integer> pos) {
+    public void export(@NonNull ParcelFileDescriptor uri) throws IOException {
+        writeJsonToStream(keysI, KB_KEYS_TYPE, new FileOutputStream(uri.getFileDescriptor()));
+    }
+
+    public int getKey(@NonNull Pair<Integer, Integer> pos) {
         return keysI.getKey(pos);
     }
 
-    public void putKey(Pair<Integer, Integer> pos, int char1) throws IOException {
+    public void putKey(@NonNull Pair<Integer, Integer> pos, int char1) throws IOException {
         keysI.putKey(pos, char1);
         writeKbLd();
     }
-
 }

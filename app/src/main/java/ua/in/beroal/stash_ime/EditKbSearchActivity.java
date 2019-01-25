@@ -61,7 +61,6 @@ public class EditKbSearchActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.edit_kb, menu);
         if (portraitView != null) {
             getMenuInflater().inflate(R.menu.edit_kb_portrait_switch, menu);
         }
@@ -76,11 +75,6 @@ public class EditKbSearchActivity extends AppCompatActivity {
                 return true;
             case R.id.portrait_switch_search_char:
                 vm.setPortraitPage(EditKbSearchVm.PortraitPage.SEARCH_CHAR);
-                return true;
-            case R.id.input_method_subtype_enabler:
-                App.getInputMethodManager().get(getApplication().getApplicationContext())
-                        .showInputMethodAndSubtypeEnabler(
-                                App.getThisInputMethodId().get(getApplication().getApplicationContext()));
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

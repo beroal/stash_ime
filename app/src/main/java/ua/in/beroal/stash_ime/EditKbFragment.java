@@ -4,11 +4,15 @@ import android.app.Activity;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.ClipData;
 import android.content.ClipDescription;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.Pair;
+import android.support.v7.widget.PopupMenu;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.DragEvent;
 import android.view.Gravity;
@@ -35,7 +39,11 @@ import ua.in.beroal.java.NoMatchingConstant;
 import ua.in.beroal.util.Unicode;
 
 public class EditKbFragment extends Fragment {
+    public static final String JSON_MIME_TYPE = "application/json";
+    public static final int EXPORT_REQUEST_CODE = 0;
+    public static final int IMPORT_REQUEST_CODE = 1;
     private EditKbVm vm;
+    private String insertKbName;
 
     private static int getHitDelete(Iterable<Integer> bounds, int pointer) {
         int i = 0;
@@ -72,7 +80,6 @@ public class EditKbFragment extends Fragment {
             default:
                 throw new NoMatchingConstant();
         }
-
     }
 
     @NonNull
@@ -111,7 +118,7 @@ public class EditKbFragment extends Fragment {
         vm.getEditMode(editMode).observe(this,
                 isOn -> {
                     buttonView.setTextColor(isOn ? 0xFFFFFFFF : 0xFF555555);
-                    buttonView.setBackgroundColor(isOn ? 0xFF555555 : 0xFFDDDDDD);
+                    buttonView.setSelected(isOn);
                 });
         buttonView.setOnClickListener(view -> vm.flipEditModeLine(editMode));
     }
@@ -137,14 +144,47 @@ public class EditKbFragment extends Fragment {
                 });
     }
 
-    @Override @Nullable
+    private void initKbMenu(@NonNull View kbShowMenuView) {
+        final PopupMenu popupMenu = new PopupMenu(getContext(), kbShowMenuView);
+        popupMenu.inflate(R.menu.kb);
+        popupMenu.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case R.id.insert_kb_form_flip:
+                    vm.flipInsertKbForm();
+                    break;
+                case R.id.enable_kb:
+                    App.getInputMethodManager()
+                            .get(getContext().getApplicationContext())
+                            .showInputMethodAndSubtypeEnabler(
+                                    App.getThisInputMethodId()
+                                            .get(getContext().getApplicationContext()));
+                    break;
+                case R.id.export_kb:
+                    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType(JSON_MIME_TYPE);
+                    intent.putExtra(Intent.EXTRA_TITLE, vm.getExportKbFileName());
+                    startActivityForResult(intent, EXPORT_REQUEST_CODE);
+                    break;
+                case R.id.delete_kb:
+                    vm.deleteKb();
+                    break;
+                default:
+                    throw new NoMatchingConstant("unknown kb menu item");
+            }
+            return true;
+        });
+        kbShowMenuView.setOnClickListener(view -> popupMenu.show());
+    }
+
+    @Override
+    @Nullable
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup parent,
                              @Nullable Bundle savedInstanceState) {
         vm = ViewModelProviders.of(this).get(EditKbVm.class);
         final View rootView = (ViewGroup) inflater.inflate(
                 R.layout.fragment_edit_kb, parent, false);
-        ((Button) rootView.findViewById(R.id.insert_kb_form_flip))
-                .setOnClickListener(v -> vm.flipInsertKbForm());
+        initKbMenu(rootView.findViewById(R.id.kb_menu));
         vm.getIsInsertKbFormShown().observe(this,
                 a -> rootView.findViewById(R.id.insert_kb_form).setVisibility(
                         a ? View.VISIBLE : View.GONE));
@@ -166,13 +206,24 @@ public class EditKbFragment extends Fragment {
             setChooseKbAdapter(chooseKbView);
         }
         final TextView insertKbNameView = (TextView) rootView.findViewById(R.id.insert_kb_name);
-        ((Button) rootView.findViewById(R.id.insert_kb_do)).setOnClickListener(
-                v -> {
+        ((Button) rootView.findViewById(R.id.insert_kb_create)).setOnClickListener(
+                view -> {
                     vm.hideInsertKbForm();
-                    vm.insertKb(insertKbNameView.getText().toString());
+                    vm.insertKbCreate(insertKbNameView.getText().toString());
                 }
         );
-        ((Button) rootView.findViewById(R.id.delete_kb)).setOnClickListener(view -> vm.deleteKb());
+        ((Button) rootView.findViewById(R.id.insert_kb_import)).setOnClickListener(
+                view -> {
+                    insertKbName = insertKbNameView.getText().toString();
+                    vm.hideInsertKbForm();
+                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType(JSON_MIME_TYPE);
+                    startActivityForResult(intent, IMPORT_REQUEST_CODE);
+                }
+        );
+        rootView.findViewById(R.id.insert_kb_cancel)
+                .setOnClickListener(view -> vm.hideInsertKbForm());
         initEditModeButton(rootView, R.id.insert_row, new EditKbModeLine(
                 EditKbModeLine.Op.INSERT, EditKbModeLine.Coord.ROW));
         initEditModeButton(rootView, R.id.insert_column, new EditKbModeLine(
@@ -326,6 +377,26 @@ public class EditKbFragment extends Fragment {
                 });
             }
             editKbView.addView(gridView);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == EXPORT_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                final Uri uri = data.getData();
+                Log.d("App", "EditKbFragment.onActivityResult.EXPORT_REQUEST_CODE=" + uri);
+                vm.exportKb(uri);
+            }
+        } else if (requestCode == IMPORT_REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                final Uri uri = data.getData();
+                Log.d("App", "EditKbFragment.onActivityResult.IMPORT_REQUEST_CODE=" + uri);
+                vm.insertKbImport(insertKbName, uri);
+                insertKbName = null;
+            }
+        } else {
+            throw new IllegalArgumentException("unknown request code");
         }
     }
 }
