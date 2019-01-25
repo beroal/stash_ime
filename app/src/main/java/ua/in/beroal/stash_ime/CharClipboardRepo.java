@@ -12,10 +12,11 @@ import com.google.gson.reflect.TypeToken;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
-import static ua.in.beroal.util.Android.charToClipboard;
 import static ua.in.beroal.util.Gson.readJsonFromAtomicFile;
 import static ua.in.beroal.util.Gson.writeJsonToAtomicFile;
 
@@ -26,7 +27,7 @@ public class CharClipboardRepo {
     private final Context context;
     private AtomicFile file;
     @NonNull
-    private List<Integer> charClipboardI; /* TODO replace with Deque */
+    private Deque<Integer> charClipboardI;
     private MutableLiveData<List<Integer>> charClipboard = new MutableLiveData<>();
 
     public CharClipboardRepo(@NonNull Context context) {
@@ -39,10 +40,10 @@ public class CharClipboardRepo {
     private void initCharClipboard() {
         try {
             final ArrayList<Integer> a = readJsonFromAtomicFile(file, CHAR_CLIPBOARD_TYPE);
-            charClipboardI = a.subList(0, Math.min(CHAR_CLIPBOARD_SIZE, a.size()));
+            charClipboardI = new ArrayDeque<>(a.subList(0, Math.min(CHAR_CLIPBOARD_SIZE, a.size())));
         } catch (IOException e) {
             Log.e("App", "I/O error", e);
-            charClipboardI = new ArrayList<>(CHAR_CLIPBOARD_SIZE);
+            charClipboardI = new ArrayDeque<>(CHAR_CLIPBOARD_SIZE);
         }
     }
 
@@ -76,13 +77,9 @@ public class CharClipboardRepo {
      */
     public void insertItem(int char1) {
         if (CHAR_CLIPBOARD_SIZE == charClipboardI.size()) {
-            charClipboardI.remove(charClipboardI.size() - 1);
+            charClipboardI.removeLast();
         }
-        charClipboardI.add(0, char1);
+        charClipboardI.addFirst(char1);
         writeAndLd();
-    }
-
-    public void itemToClipboard(int ix) {
-        charToClipboard(context, charClipboardI.get(ix));
     }
 }

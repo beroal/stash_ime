@@ -30,10 +30,15 @@ public class Ime extends InputMethodService
         lifecycle = new LifecycleRegistry(this);
         emptyKb.setValue(Optional.empty());
         kbKeys = Transformations.switchMap(kbId,
-                kbId -> kbId.isEmpty()
-                        ? emptyKb
-                        : ((App) getApplication()).getEditKbRepo()
-                        .getKeysOptional(kbId.orElseThrow()));
+                kbId -> {
+                    if (kbId.isEmpty()) {
+                        return emptyKb;
+                    } else {
+                        final LiveData<Optional<KbKeys>> r = ((App) getApplication()).getEditKbRepo()
+                                .getKeysOptionalNullable(kbId.orElseThrow());
+                        return r == null ? emptyKb : r;
+                    }
+                });
     }
 
     @NonNull
@@ -70,14 +75,12 @@ public class Ime extends InputMethodService
         if (imSubtype == null) {
             kbId = null;
         } else {
-
             final String subtypeKbId = imSubtype.getExtraValueOf(SUBTYPE_STRING_ID_EXTRA_FIELD);
             kbId = ((App) getApplication()).getEditKbRepo().kbExists(subtypeKbId) ?
                     subtypeKbId : null;
         }
         this.kbId.setValue(Optional.ofNullable(kbId));
         kbKeys.observe(this, kbView::setContents);
-        /*TODO if chosen keyboard is deleted*/
         return kbView;
     }
 

@@ -57,6 +57,7 @@ public class EditKbRepo {
                 e = e1;
             }
         }
+        sendKbListToOsI();
         kbKeys = switchMap(chosenKbId,
                 kbId -> kbId.isEmpty() ? emptyKb : getKeysOptional(kbId.orElseThrow()));
         final SharedPreferences sharedPreferences = context.getSharedPreferences(
@@ -95,6 +96,11 @@ public class EditKbRepo {
                 ? -1
                 : findNextByOrder(list, a.orElseThrow());
         return new Pair<>(i, i == -1 ? Optional.empty() : Optional.of(list.get(i)));
+    }
+
+    private void sendKbListToOsI() {
+        ensureKbNameList();
+        this.sendKbListToOs.accept(kbNameList);
     }
 
     private void saveChosenKbId(@NonNull Optional<String> chosenKbIdI) {
@@ -142,6 +148,7 @@ public class EditKbRepo {
         } else {
             kbFamily.put(kbId, kbRepo.get());
             kbNameList = null;
+            sendKbListToOsI();
             chooseKbId(Optional.of(kbId));
             return true;
         }
@@ -172,6 +179,7 @@ public class EditKbRepo {
             kbFamily.get(kbId).delete();
             kbFamily.remove(kbId);
             kbNameList = null;
+            sendKbListToOsI();
             chooseKbId(chosenKbId.getValue());
         });
     }
@@ -195,13 +203,19 @@ public class EditKbRepo {
         return new File(context.getDir(KB_DIR, Context.MODE_PRIVATE), kbId);
     }
 
+    @Nullable
+    public LiveData<Optional<KbKeys>> getKeysOptionalNullable(@NonNull String kbId) {
+        KbRepo kbRepo = kbFamily.get(kbId);
+        return kbRepo == null ? null : kbRepo.getKeysOptional();
+    }
+
     @NonNull
     public LiveData<Optional<KbKeys>> getKeysOptional(@NonNull String kbId) {
-        KbRepo kbRepo = kbFamily.get(kbId);
-        if (kbRepo == null) {
+        final LiveData<Optional<KbKeys>> r = getKeysOptionalNullable(kbId);
+        if (r == null) {
             throw new IllegalArgumentException();
         } else {
-            return kbRepo.getKeysOptional();
+            return r;
         }
     }
 

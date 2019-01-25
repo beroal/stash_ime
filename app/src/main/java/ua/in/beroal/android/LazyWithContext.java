@@ -7,7 +7,6 @@ import java8.util.function.Function;
 /**
  * An object of class {@code T} that is created lazily from a {@link Context}.
  */
-// TODO as for me, this object could be really simple initializer. You use it only in App class, so it can hold app Context without consequences.
 public class LazyWithContext<T> {
     private T value;
     private Function<Context, T> initialValueF;

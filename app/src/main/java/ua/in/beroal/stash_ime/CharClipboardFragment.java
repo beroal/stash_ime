@@ -18,6 +18,8 @@ import java.util.List;
 import ua.in.beroal.android.ClickPointTextView;
 import ua.in.beroal.util.Unicode;
 
+import static ua.in.beroal.util.Android.charToClipboard;
+
 /**
  * This fragment has no GUI state, so it does not access a {@code ViewModel},
  * it directly accesses the repository {@link CharClipboardRepo} instead.
@@ -61,23 +63,20 @@ public class CharClipboardFragment extends Fragment {
                 listView.setOrientation(LinearLayout.HORIZONTAL);
                 listView.setLayoutParams(new ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                int i = 0;
                 for (Integer char1 : chars) {
                     final View itemView = getLayoutInflater().inflate(
                             R.layout.char_token, listView, false);
                     final ClickPointTextView charImageV =
                             (ClickPointTextView) itemView.findViewById(R.id.char_image);
                     charImageV.setText(Unicode.codePointToString(char1));
-                    charImageV.setTag(i);
-                    charImageV.setOnClickPointListener((v, x, y) -> charClipboardRepo
-                            .itemToClipboard((Integer) v.getTag()));
+                    charImageV.setOnClickPointListener((v, x, y) -> charToClipboard(
+                            getContext().getApplicationContext(), char1));
                     charImageV.setOnDragStartedListener((v, x, y) -> v.startDragAndDrop(
                             ClipData.newPlainText("", Unicode.codePointToString(char1)),
                             new View.DragShadowBuilder(v),
                             null,
                             0));
                     listView.addView(itemView);
-                    i++;
                 }
                 rootView.addView(listView);
             }
