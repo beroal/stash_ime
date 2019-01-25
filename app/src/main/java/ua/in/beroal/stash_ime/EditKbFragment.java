@@ -131,7 +131,7 @@ public class EditKbFragment extends Fragment {
                 new ArrayAdapter<>(getContext(), android.R.layout.simple_spinner_item);
         chooseKbAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         chooseKbView.setAdapter(chooseKbAdapter);
-        vm.getKbList().observe(this,
+        vm.getKbListSel().observe(this,
                 a -> {
                     chooseKbAdapter.clear();
                     for (CharSequence item : a.second) {
@@ -195,7 +195,7 @@ public class EditKbFragment extends Fragment {
             chooseKbView.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    vm.setChosenKb(position == AdapterView.INVALID_POSITION ? -1 : position);
+                    vm.chooseKb(position == AdapterView.INVALID_POSITION ? -1 : position);
                 }
 
                 @Override

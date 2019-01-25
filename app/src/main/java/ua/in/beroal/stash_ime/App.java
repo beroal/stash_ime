@@ -3,7 +3,6 @@ package ua.in.beroal.stash_ime;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.support.v4.util.Pair;
 import android.util.Log;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -15,7 +14,7 @@ import ua.in.beroal.Lazy;
 import ua.in.beroal.android.LazyWithContext;
 
 public class App extends Application {
-    public static final String NON_FIRST_RUN_FIELD = "non_first_run";
+    public static final String NON_FIRST_RUN_PREF_FIELD = "non_first_run";
     private static LazyWithContext<InputMethodManager> inputMethodManager =
             new LazyWithContext<>(
                     context -> {
@@ -97,9 +96,9 @@ public class App extends Application {
         /* If this is the first run of this application on this device,
          * the OS does not know about user's keyboards,
          * so the subtypes need to be sent to OS by creating a {@link EditKbRepo}. */
-        if (!sharedPreferences.getBoolean(NON_FIRST_RUN_FIELD, false)) {
+        if (!sharedPreferences.getBoolean(NON_FIRST_RUN_PREF_FIELD, false)) {
             getEditKbRepo();
-            sharedPreferences.edit().putBoolean(NON_FIRST_RUN_FIELD, true).apply();
+            sharedPreferences.edit().putBoolean(NON_FIRST_RUN_PREF_FIELD, true).apply();
         }
     }
 }

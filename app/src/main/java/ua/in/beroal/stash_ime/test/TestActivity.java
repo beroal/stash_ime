@@ -14,7 +14,7 @@ import ua.in.beroal.stash_ime.App;
 import ua.in.beroal.stash_ime.BuildConfig;
 import ua.in.beroal.stash_ime.R;
 
-import static ua.in.beroal.stash_ime.App.NON_FIRST_RUN_FIELD;
+import static ua.in.beroal.stash_ime.App.NON_FIRST_RUN_PREF_FIELD;
 
 public class TestActivity extends AppCompatActivity {
     private InputMethodManager imm;
@@ -53,7 +53,7 @@ public class TestActivity extends AppCompatActivity {
                         thisInputMethodId, new InputMethodSubtype[]{}));
         ((Button) findViewById(R.id.reset_non_first_run_flag)).setOnClickListener(v -> {
             getSharedPreferences(BuildConfig.APPLICATION_ID, MODE_PRIVATE)
-                    .edit().putBoolean(NON_FIRST_RUN_FIELD, false).commit();
+                    .edit().putBoolean(NON_FIRST_RUN_PREF_FIELD, false).commit();
             System.exit(0);
         });
     }
