@@ -10,6 +10,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,12 +22,6 @@ import ua.in.beroal.android.ListAdapter;
 
 public class SearchCharFragment extends Fragment {
     private SearchCharVm vm;
-
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        vm = ViewModelProviders.of(this).get(SearchCharVm.class);
-    }
 
     /**
      * Updates the CPV filter.
@@ -71,11 +66,13 @@ public class SearchCharFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        vm = ViewModelProviders.of(this).get(SearchCharVm.class);
         View rootView = inflater.inflate(R.layout.fragment_search_char, container, false);
         ((SearchView) rootView.findViewById(R.id.search_char_words))
                 .setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                     @Override
-                    public boolean onQueryTextSubmit(String query) {
+                    public boolean onQueryTextSubmit(String wordsS) {
+                        Log.d("App", "SearchCharFragment.onQueryTextSubmit=" + wordsS);
                         return false;
                     }
 
@@ -86,13 +83,35 @@ public class SearchCharFragment extends Fragment {
                     }
                 });
         final ViewGroup cpvFilterView = rootView.findViewById(R.id.cpv_filter);
-        vm.getCpvFilter().observe(this, cpvList -> setCpvFilterView(cpvFilterView, cpvList));
+        vm.getCpvFilter().observe(this, cpvList -> {
+            if (cpvList != null) {
+                setCpvFilterView(cpvFilterView, cpvList);
+            }
+        });
         initCharRowList(rootView);
         ((Button) rootView.findViewById(R.id.insert_cpv_filter))
                 .setOnClickListener(view -> startActivityForResult(
                         new Intent(getContext(), CpvActivity.class), 0));
         vm.restoreInstanceState(savedInstanceState);
         return rootView;
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d("App", "SearchCharFragment(" + getId() + ").onDestroy");
+        super.onDestroy();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Log.d("App", "SearchCharFragment(" + getId() + ").onStart");
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d("App", "SearchCharFragment(" + getId() + ").onResume");
     }
 
     @Override

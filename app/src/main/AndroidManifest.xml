@@ -44,7 +44,7 @@
         </activity>
         <activity
             android:name=".CpvActivity"
-            android:theme="@style/AppTheme.NoActionBar"/>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".SearchCharActivity"
             android:label="Unicode Explorer"
@@ -58,7 +58,8 @@
         <activity
             android:name=".EditKbSearchActivity"
             android:label="Stash IM Settings"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>

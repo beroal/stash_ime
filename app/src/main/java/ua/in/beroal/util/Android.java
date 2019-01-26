@@ -27,7 +27,9 @@ public class Android {
         final ClipData clip =
                 ((ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE))
                         .getPrimaryClip();
-        return clip.getItemCount() == 0 ? null : clip.getItemAt(0).getText();
+        return clip == null
+                ? null
+                : clip.getItemCount() == 0 ? null : clip.getItemAt(0).getText();
     }
 
     public static void charToClipboard(@NonNull Context context, int char1) {
@@ -49,7 +51,15 @@ public class Android {
                 .inflate(resId, parent, false);
     }
 
-
+    /**
+     * @return A result such that its value (meaning {@link LiveData#getValue()}) is:
+     * <ul>
+     * <li>{@code func(a0, a1)} if {@code a0} and {@code a1} are not {@code null},</li>
+     * <li>{@code null} otherwise,</li>
+     * </ul>
+     * where {@code a0} is the value of {@code source0},
+     * and {@code a1} is the value of {@code source1}.
+     */
     @MainThread
     public static <A0, A1, R> LiveData<R> map2(
             @NonNull LiveData<A0> source0, @NonNull LiveData<A1> source1,

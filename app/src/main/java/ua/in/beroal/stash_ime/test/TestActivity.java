@@ -10,9 +10,9 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 import android.widget.Button;
 
-import ua.in.beroal.stash_ime.App;
 import ua.in.beroal.stash_ime.BuildConfig;
 import ua.in.beroal.stash_ime.R;
+import ua.in.beroal.stash_ime.Singleton;
 
 import static ua.in.beroal.stash_ime.App.NON_FIRST_RUN_PREF_FIELD;
 
@@ -23,8 +23,8 @@ public class TestActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        imm = App.getInputMethodManager().get(this);
-        final String thisInputMethodId = App.getThisInputMethodId().get(this);
+        imm = Singleton.getInputMethodManager().get(this);
+        final String thisInputMethodId = Singleton.getThisInputMethodId().get(this);
         Log.d("App", "thisInputMethodId=" + thisInputMethodId);
         setContentView(R.layout.activity_test);
         ((Button) findViewById(R.id.im_settings)).setOnClickListener(v -> {

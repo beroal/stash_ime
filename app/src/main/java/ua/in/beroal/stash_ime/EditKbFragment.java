@@ -117,8 +117,10 @@ public class EditKbFragment extends Fragment {
         buttonView.setText(getOpButtonText(editMode) + getCoordButtonText(editMode));
         vm.getEditMode(editMode).observe(this,
                 isOn -> {
-                    buttonView.setTextColor(isOn ? 0xFFFFFFFF : 0xFF555555);
-                    buttonView.setSelected(isOn);
+                    if (isOn != null) {
+                        buttonView.setTextColor(isOn ? 0xFFFFFFFF : 0xFF555555);
+                        buttonView.setSelected(isOn);
+                    }
                 });
         buttonView.setOnClickListener(view -> vm.flipEditModeLine(editMode));
     }
@@ -153,10 +155,10 @@ public class EditKbFragment extends Fragment {
                     vm.flipInsertKbForm();
                     break;
                 case R.id.enable_kb:
-                    App.getInputMethodManager()
+                    Singleton.getInputMethodManager()
                             .get(getContext().getApplicationContext())
                             .showInputMethodAndSubtypeEnabler(
-                                    App.getThisInputMethodId()
+                                    Singleton.getThisInputMethodId()
                                             .get(getContext().getApplicationContext()));
                     break;
                 case R.id.export_kb:
@@ -186,8 +188,12 @@ public class EditKbFragment extends Fragment {
                 R.layout.fragment_edit_kb, parent, false);
         initKbMenu(rootView.findViewById(R.id.kb_menu));
         vm.getIsInsertKbFormShown().observe(this,
-                a -> rootView.findViewById(R.id.insert_kb_form).setVisibility(
-                        a ? View.VISIBLE : View.GONE));
+                a -> {
+                    if (a != null) {
+                        rootView.findViewById(R.id.insert_kb_form).setVisibility(
+                                a ? View.VISIBLE : View.GONE);
+                    }
+                });
         final ViewGroup editKbView = rootView.findViewById(R.id.edit_kb);
         vm.getKb().observe(this, kbViewState -> createKbView(editKbView, kbViewState));
         {
@@ -234,6 +240,12 @@ public class EditKbFragment extends Fragment {
                 EditKbModeLine.Op.DELETE, EditKbModeLine.Coord.COLUMN));
         vm.restoreInstanceState(savedInstanceState);
         return rootView;
+    }
+
+    @Override
+    public void onDestroy() {
+        Log.d("App", "EditKbFragment(" + getId() + ").onDestroy");
+        super.onDestroy();
     }
 
     @Override
@@ -353,7 +365,7 @@ public class EditKbFragment extends Fragment {
             if (kbViewState.getEditMode() instanceof EditKbModeLine) {
                 EditKbModeLine editModeLine = (EditKbModeLine) kbViewState.getEditMode();
                 gridView.setOnClickPointListener((view, x, y) -> {
-                    final Iterable<View> boundViews;
+                    @NonNull final Iterable<View> boundViews;
                     final Function<View, Integer> viewToBound;
                     final float pointer;
                     switch (editModeLine.getCoord()) {

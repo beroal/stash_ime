@@ -14,7 +14,7 @@ public class AppUpdateReceiver extends BroadcastReceiver {
             /* If this application has been updated,
              * the OS deleted this input method's subtypes (corresponding to user's keyboards),
              * so the subtypes need to be sent to OS by creating a {@link EditKbRepo}. */
-            App.getEditKbRepoContext().get(context);
+            Singleton.getEditKbRepo().get(context);
         }
     }
 }

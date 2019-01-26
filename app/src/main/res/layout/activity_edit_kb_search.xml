@@ -1,28 +1,58 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".EditKbSearchActivity">
 
+    <android.support.design.widget.TabLayout
+        android:id="@+id/eks_tab_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:tabMode="fixed">
+
+        <android.support.design.widget.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Keyboards" />
+
+        <android.support.design.widget.TabItem
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Unicode" />
+    </android.support.design.widget.TabLayout>
+
     <FrameLayout
-        android:id="@+id/edit_kb_portrait"
+        android:id="@+id/eks_portrait_page"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <fragment
-            android:id="@+id/edit_kb_fragment"
-            android:name="ua.in.beroal.stash_ime.EditKbFragment"
+        <FrameLayout
+            android:id="@+id/search_char_fragment_show"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="match_parent">
 
-        <fragment
-            android:id="@+id/search_char_fragment"
-            android:name="ua.in.beroal.stash_ime.SearchCharFragment"
+            <fragment
+                android:id="@+id/search_char_fragment"
+                android:name="ua.in.beroal.stash_ime.SearchCharFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/edit_kb_fragment_show"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="match_parent">
+
+            <fragment
+                android:id="@+id/edit_kb_fragment"
+                android:name="ua.in.beroal.stash_ime.EditKbFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </FrameLayout>
     </FrameLayout>
 
     <fragment
@@ -30,5 +60,4 @@
         android:name="ua.in.beroal.stash_ime.CharClipboardFragment"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
-
 </LinearLayout>

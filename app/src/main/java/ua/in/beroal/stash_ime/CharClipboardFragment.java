@@ -1,7 +1,6 @@
 package ua.in.beroal.stash_ime;
 
 import android.app.Activity;
-import android.arch.lifecycle.Observer;
 import android.content.ClipData;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -25,6 +24,35 @@ import static ua.in.beroal.util.Android.charToClipboard;
  * it directly accesses the repository {@link CharClipboardRepo} instead.
  */
 public class CharClipboardFragment extends Fragment {
+    private static void onChanged(@NonNull Fragment fragment, @NonNull ViewGroup rootView,
+                                  @Nullable List<Integer> chars) {
+        if (chars != null) {
+            if (rootView.getChildCount() != 0) {
+                rootView.removeViewAt(0);
+            }
+            final LinearLayout listView = new LinearLayout(rootView.getContext());
+            listView.setOrientation(LinearLayout.HORIZONTAL);
+            listView.setLayoutParams(new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            for (Integer char1 : chars) {
+                final View itemView = fragment.getLayoutInflater().inflate(
+                        R.layout.char_token, listView, false);
+                final ClickPointTextView charImageV =
+                        (ClickPointTextView) itemView.findViewById(R.id.char_image);
+                charImageV.setText(Unicode.codePointToString(char1));
+                charImageV.setOnClickPointListener((v, x, y) -> charToClipboard(
+                        fragment.getContext().getApplicationContext(), char1));
+                charImageV.setOnDragStartedListener((v, x, y) -> v.startDragAndDrop(
+                        ClipData.newPlainText("", Unicode.codePointToString(char1)),
+                        new View.DragShadowBuilder(v),
+                        null,
+                        0));
+                listView.addView(itemView);
+            }
+            rootView.addView(listView);
+        }
+    }
+
     private App getApp() {
         return (App) ((Activity) getContext()).getApplication();
     }
@@ -36,50 +64,7 @@ public class CharClipboardFragment extends Fragment {
         rootView.setLayoutParams(new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         getApp().getCharClipboardRepo().get().getCharClipboard()
-                .observe(this, new Observer1(rootView));
+                .observe(this, chars -> onChanged(this, rootView, chars));
         return rootView;
-    }
-
-    private class Observer1 implements Observer<List<Integer>> {
-        private final ViewGroup rootView;
-        private final CharClipboardRepo charClipboardRepo;
-
-        public Observer1(ViewGroup rootView) {
-            this.rootView = rootView;
-            this.charClipboardRepo = getApp().getCharClipboardRepo().get();
-        }
-
-        @Override
-        public void onChanged(@Nullable List<Integer> chars) {
-            if (chars == null) {
-                throw new IllegalArgumentException(
-                        "CharClipboardRepo.getCharClipboard must not send null");
-            } else {
-                if (rootView.getChildCount() != 0) {
-                    rootView.removeViewAt(0);
-                }
-                final LinearLayout listView = new LinearLayout(
-                        CharClipboardFragment.this.getContext());
-                listView.setOrientation(LinearLayout.HORIZONTAL);
-                listView.setLayoutParams(new ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                for (Integer char1 : chars) {
-                    final View itemView = getLayoutInflater().inflate(
-                            R.layout.char_token, listView, false);
-                    final ClickPointTextView charImageV =
-                            (ClickPointTextView) itemView.findViewById(R.id.char_image);
-                    charImageV.setText(Unicode.codePointToString(char1));
-                    charImageV.setOnClickPointListener((v, x, y) -> charToClipboard(
-                            getContext().getApplicationContext(), char1));
-                    charImageV.setOnDragStartedListener((v, x, y) -> v.startDragAndDrop(
-                            ClipData.newPlainText("", Unicode.codePointToString(char1)),
-                            new View.DragShadowBuilder(v),
-                            null,
-                            0));
-                    listView.addView(itemView);
-                }
-                rootView.addView(listView);
-            }
-        }
     }
 }

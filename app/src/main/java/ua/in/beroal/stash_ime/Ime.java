@@ -69,7 +69,7 @@ public class Ime extends InputMethodService
     public View onCreateInputView() {
         final KbView kbView = new KbView(this, null, 0);
         kbView.setOnKeyboardActionListener(this);
-        final InputMethodSubtype imSubtype = App.getInputMethodManager().get(this)
+        final InputMethodSubtype imSubtype = Singleton.getInputMethodManager().get(this)
                 .getCurrentInputMethodSubtype();
         String kbId;
         if (imSubtype == null) {

@@ -1,83 +1,69 @@
 package ua.in.beroal.stash_ime;
 
-import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import android.support.annotation.NonNull;
+import android.support.design.widget.TabLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.ViewGroup;
+import android.view.View;
+import android.widget.FrameLayout;
 
-import ua.in.beroal.java.NoMatchingConstant;
-
+/**
+ * We use {@link FrameLayout} instead of {@link android.support.v4.view.ViewPager}
+ * because we need every fragment to have the same identifier (id)
+ * in all layout XML files for this activity,
+ * and identifiers of fragments inside a {@link android.support.v4.view.ViewPager} can't be set.
+ * We need every fragment to have the same identifier
+ * so fragment state is preserved when changing screen orientation.
+ *
+ * @see <a href="https://coderanch.com/t/602443/Dynamic-Fragments-access-recreated-saved">
+ * Dynamic Fragments: How can I access them when they are recreated from saved state?</a>
+ */
 public class EditKbSearchActivity extends AppCompatActivity {
-    private EditKbSearchVm vm;
-    private ViewGroup portraitView;
+    public static final String PORTRAIT_PAGE_FIELD = "portrait_page";
+    private int portraitPage;
+
+    private static void setPortraitPageVisibility(@NonNull View[] fragmentShow, int portraitPage) {
+        for (int i = fragmentShow.length; i-- != 0; ) {
+            fragmentShow[i].setVisibility(portraitPage == i ? View.VISIBLE : View.GONE);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        vm = ViewModelProviders.of(this).get(EditKbSearchVm.class);
         setContentView(R.layout.activity_edit_kb_search);
-        portraitView = (ViewGroup) findViewById(R.id.edit_kb_portrait);
-        final Fragment editKbFragment = getSupportFragmentManager()
-                .findFragmentById(R.id.edit_kb_fragment);
-        final Fragment searchCharFragment = getSupportFragmentManager()
-                .findFragmentById(R.id.search_char_fragment);
-        if (portraitView != null) {
-            vm.getPortraitPage().observe(this,
-                    portraitPage -> {
-                        switch (portraitPage) {
-                            case EDIT_KB:
-                                getSupportFragmentManager().beginTransaction()
-                                        .show(editKbFragment)
-                                        .hide(searchCharFragment)
-                                        .commit();
-                                break;
-                            case SEARCH_CHAR:
-                                getSupportFragmentManager().beginTransaction()
-                                        .hide(editKbFragment)
-                                        .show(searchCharFragment)
-                                        .commit();
-                                break;
-                            default:
-                                throw new NoMatchingConstant();
-                        }
-                    });
-        } else {
-            getSupportFragmentManager().beginTransaction()
-                    .show(editKbFragment)
-                    .show(searchCharFragment)
-                    .commit();
+        TabLayout tabLayout = (TabLayout) findViewById(R.id.eks_tab_layout);
+        final boolean portrait = tabLayout != null;
+        portraitPage = savedInstanceState != null
+                ? savedInstanceState.getInt(PORTRAIT_PAGE_FIELD)
+                : 0;
+        if (portrait) {
+            final View[] fragmentShow = {
+                    findViewById(R.id.edit_kb_fragment_show),
+                    findViewById(R.id.search_char_fragment_show)};
+            tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+                @Override
+                public void onTabSelected(TabLayout.Tab tab) {
+                    portraitPage = tab.getPosition();
+                    setPortraitPageVisibility(fragmentShow, portraitPage);
+                }
+
+                @Override
+                public void onTabUnselected(TabLayout.Tab tab) {
+                }
+
+                @Override
+                public void onTabReselected(TabLayout.Tab tab) {
+                }
+            });
+            setPortraitPageVisibility(fragmentShow, portraitPage);
+            tabLayout.getTabAt(portraitPage).select();
         }
-        vm.restoreInstanceState(savedInstanceState);
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        vm.saveInstanceState(outState);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        if (portraitView != null) {
-            getMenuInflater().inflate(R.menu.edit_kb_portrait_switch, menu);
-        }
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.portrait_switch_edit_kb:
-                vm.setPortraitPage(EditKbSearchVm.PortraitPage.EDIT_KB);
-                return true;
-            case R.id.portrait_switch_search_char:
-                vm.setPortraitPage(EditKbSearchVm.PortraitPage.SEARCH_CHAR);
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
+        outState.putInt(PORTRAIT_PAGE_FIELD, portraitPage);
     }
 }

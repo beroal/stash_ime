@@ -30,7 +30,7 @@ import static ua.in.beroal.util.ReactiveX.observableToArrayList;
 /**
  * A repository for this {@code ViewModel} is the Unicode Character Database which is constant
  * and is stored in the <a href="http://site.icu-project.org/home">ICU library</a>.
- * Character filtering is performed in a background thread via {@link CharListTask}.
+ * Character filtering is performed in a background thread via {@link SearchCharVm.CharListTask}.
  */
 public class SearchCharVm extends AndroidViewModel {
     public static final String FILTER_WORDS_FIELD = "filter_words";
